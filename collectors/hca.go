@@ -84,7 +84,7 @@ type HCAMetrics struct {
 }
 
 func NewHCACollector(devices *[]InfinibandDevice, runonce bool, logger log.Logger) *HCACollector {
-	labels := []string{"guid", "port"}
+	labels := []string{"guid", "port", "switch"}
 	collector := "hca"
 	if runonce {
 		collector = "hca-runonce"
@@ -208,89 +208,93 @@ func (h *HCACollector) Collect(ch chan<- prometheus.Metric) {
 	collectTime := time.Now()
 	counters, metrics, errors, timeouts := h.collect()
 	for _, c := range counters {
+		switchGuid := ""
+		if c.device.Switch != "" {
+			switchGuid = c.device.Switch
+		}
 		if !math.IsNaN(c.PortXmitData) {
-			ch <- prometheus.MustNewConstMetric(h.PortXmitData, prometheus.CounterValue, c.PortXmitData, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortXmitData, prometheus.CounterValue, c.PortXmitData, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortRcvData) {
-			ch <- prometheus.MustNewConstMetric(h.PortRcvData, prometheus.CounterValue, c.PortRcvData, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortRcvData, prometheus.CounterValue, c.PortRcvData, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortXmitPkts) {
-			ch <- prometheus.MustNewConstMetric(h.PortXmitPkts, prometheus.CounterValue, c.PortXmitPkts, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortXmitPkts, prometheus.CounterValue, c.PortXmitPkts, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortRcvPkts) {
-			ch <- prometheus.MustNewConstMetric(h.PortRcvPkts, prometheus.CounterValue, c.PortRcvPkts, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortRcvPkts, prometheus.CounterValue, c.PortRcvPkts, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortUnicastXmitPkts) {
-			ch <- prometheus.MustNewConstMetric(h.PortUnicastXmitPkts, prometheus.CounterValue, c.PortUnicastXmitPkts, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortUnicastXmitPkts, prometheus.CounterValue, c.PortUnicastXmitPkts, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortUnicastRcvPkts) {
-			ch <- prometheus.MustNewConstMetric(h.PortUnicastRcvPkts, prometheus.CounterValue, c.PortUnicastRcvPkts, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortUnicastRcvPkts, prometheus.CounterValue, c.PortUnicastRcvPkts, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortMulticastXmitPkts) {
-			ch <- prometheus.MustNewConstMetric(h.PortMulticastXmitPkts, prometheus.CounterValue, c.PortMulticastXmitPkts, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortMulticastXmitPkts, prometheus.CounterValue, c.PortMulticastXmitPkts, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortMulticastRcvPkts) {
-			ch <- prometheus.MustNewConstMetric(h.PortMulticastRcvPkts, prometheus.CounterValue, c.PortMulticastRcvPkts, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortMulticastRcvPkts, prometheus.CounterValue, c.PortMulticastRcvPkts, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.SymbolErrorCounter) {
-			ch <- prometheus.MustNewConstMetric(h.SymbolErrorCounter, prometheus.CounterValue, c.SymbolErrorCounter, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.SymbolErrorCounter, prometheus.CounterValue, c.SymbolErrorCounter, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.LinkErrorRecoveryCounter) {
-			ch <- prometheus.MustNewConstMetric(h.LinkErrorRecoveryCounter, prometheus.CounterValue, c.LinkErrorRecoveryCounter, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.LinkErrorRecoveryCounter, prometheus.CounterValue, c.LinkErrorRecoveryCounter, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.LinkDownedCounter) {
-			ch <- prometheus.MustNewConstMetric(h.LinkDownedCounter, prometheus.CounterValue, c.LinkDownedCounter, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.LinkDownedCounter, prometheus.CounterValue, c.LinkDownedCounter, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortRcvErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortRcvErrors, prometheus.CounterValue, c.PortRcvErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortRcvErrors, prometheus.CounterValue, c.PortRcvErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortRcvRemotePhysicalErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortRcvRemotePhysicalErrors, prometheus.CounterValue, c.PortRcvRemotePhysicalErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortRcvRemotePhysicalErrors, prometheus.CounterValue, c.PortRcvRemotePhysicalErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortRcvSwitchRelayErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortRcvSwitchRelayErrors, prometheus.CounterValue, c.PortRcvSwitchRelayErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortRcvSwitchRelayErrors, prometheus.CounterValue, c.PortRcvSwitchRelayErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortXmitDiscards) {
-			ch <- prometheus.MustNewConstMetric(h.PortXmitDiscards, prometheus.CounterValue, c.PortXmitDiscards, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortXmitDiscards, prometheus.CounterValue, c.PortXmitDiscards, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortXmitConstraintErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortXmitConstraintErrors, prometheus.CounterValue, c.PortXmitConstraintErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortXmitConstraintErrors, prometheus.CounterValue, c.PortXmitConstraintErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortRcvConstraintErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortRcvConstraintErrors, prometheus.CounterValue, c.PortRcvConstraintErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortRcvConstraintErrors, prometheus.CounterValue, c.PortRcvConstraintErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.LocalLinkIntegrityErrors) {
-			ch <- prometheus.MustNewConstMetric(h.LocalLinkIntegrityErrors, prometheus.CounterValue, c.LocalLinkIntegrityErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.LocalLinkIntegrityErrors, prometheus.CounterValue, c.LocalLinkIntegrityErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.ExcessiveBufferOverrunErrors) {
-			ch <- prometheus.MustNewConstMetric(h.ExcessiveBufferOverrunErrors, prometheus.CounterValue, c.ExcessiveBufferOverrunErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.ExcessiveBufferOverrunErrors, prometheus.CounterValue, c.ExcessiveBufferOverrunErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.VL15Dropped) {
-			ch <- prometheus.MustNewConstMetric(h.VL15Dropped, prometheus.CounterValue, c.VL15Dropped, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.VL15Dropped, prometheus.CounterValue, c.VL15Dropped, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortXmitWait) {
-			ch <- prometheus.MustNewConstMetric(h.PortXmitWait, prometheus.CounterValue, c.PortXmitWait, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortXmitWait, prometheus.CounterValue, c.PortXmitWait, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.QP1Dropped) {
-			ch <- prometheus.MustNewConstMetric(h.QP1Dropped, prometheus.CounterValue, c.QP1Dropped, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.QP1Dropped, prometheus.CounterValue, c.QP1Dropped, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortLocalPhysicalErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortLocalPhysicalErrors, prometheus.CounterValue, c.PortLocalPhysicalErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortLocalPhysicalErrors, prometheus.CounterValue, c.PortLocalPhysicalErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortMalformedPktErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortMalformedPktErrors, prometheus.CounterValue, c.PortMalformedPktErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortMalformedPktErrors, prometheus.CounterValue, c.PortMalformedPktErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortBufferOverrunErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortBufferOverrunErrors, prometheus.CounterValue, c.PortBufferOverrunErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortBufferOverrunErrors, prometheus.CounterValue, c.PortBufferOverrunErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortDLIDMappingErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortDLIDMappingErrors, prometheus.CounterValue, c.PortDLIDMappingErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortDLIDMappingErrors, prometheus.CounterValue, c.PortDLIDMappingErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortVLMappingErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortVLMappingErrors, prometheus.CounterValue, c.PortVLMappingErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortVLMappingErrors, prometheus.CounterValue, c.PortVLMappingErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 		if !math.IsNaN(c.PortLoopingErrors) {
-			ch <- prometheus.MustNewConstMetric(h.PortLoopingErrors, prometheus.CounterValue, c.PortLoopingErrors, c.device.GUID, c.PortSelect)
+			ch <- prometheus.MustNewConstMetric(h.PortLoopingErrors, prometheus.CounterValue, c.PortLoopingErrors, c.device.GUID, c.PortSelect, switchGuid)
 		}
 	}
 	if *hcaCollectBase {

@@ -58,6 +58,7 @@ type InfinibandDevice struct {
 	RawRate float64
 	Name    string
 	Uplinks map[string]InfinibandUplink
+	Switch  string
 }
 
 type InfinibandUplink struct {
@@ -196,6 +197,7 @@ func ibnetdiscoverParse(out string, logger log.Logger) (*[]InfinibandDevice, *[]
 			uplink.Rate = effectiveRate
 			uplink.RawRate = rawRate
 			device.Uplinks[portNumber] = uplink
+			device.Switch = uplink.Name
 		}
 		device.Name = portName
 		devices[guid] = device
