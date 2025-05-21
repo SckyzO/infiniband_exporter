@@ -36,8 +36,8 @@ func TestSwitchCollector(t *testing.T) {
 		infiniband_exporter_collect_timeouts{collector="switch"} 0
 		# HELP infiniband_switch_info Infiniband switch information
 		# TYPE infiniband_switch_info gauge
-		infiniband_switch_info{guid="0x506b4b03005c2740",lid="2052",switch="ib-i4l1s01"} 1
-		infiniband_switch_info{guid="0x7cfe9003009ce5b0",lid="1719",switch="ib-i1l1s01"} 1
+		infiniband_switch_info{guid="0x506b4b03005c2740",lid="2052",switch="iswr0l1"} 1
+		infiniband_switch_info{guid="0x7cfe9003009ce5b0",lid="1719",switch="iswr1l1"} 1
 		# HELP infiniband_switch_port_excessive_buffer_overrun_errors_total Infiniband switch port ExcessiveBufferOverrunErrors
 		# TYPE infiniband_switch_port_excessive_buffer_overrun_errors_total counter
 		infiniband_switch_port_excessive_buffer_overrun_errors_total{guid="0x506b4b03005c2740",port="1"} 0
@@ -162,10 +162,10 @@ func TestSwitchCollector(t *testing.T) {
 		infiniband_switch_port_vl15_dropped_total{guid="0x7cfe9003009ce5b0",port="2"} 0
 		# HELP infiniband_switch_uplink_info Infiniband switch uplink information
 		# TYPE infiniband_switch_uplink_info gauge
-		infiniband_switch_uplink_info{guid="0x506b4b03005c2740",port="35",switch="ib-i4l1s01",uplink="p0001 HCA-1",uplink_guid="0x506b4b0300cc02a6",uplink_lid="1432",uplink_port="1",uplink_type="CA"} 1
-		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="1",switch="ib-i1l1s01",uplink="ib-i1l2s01",uplink_guid="0x7cfe900300b07320",uplink_lid="1516",uplink_port="1",uplink_type="SW"} 1
-		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="10",switch="ib-i1l1s01",uplink="o0001 HCA-1",uplink_guid="0x7cfe9003003b4bde",uplink_lid="134",uplink_port="1",uplink_type="CA"} 1
-		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="11",switch="ib-i1l1s01",uplink="o0002 HCA-1",uplink_guid="0x7cfe9003003b4b96",uplink_lid="133",uplink_port="1",uplink_type="CA"} 1
+		infiniband_switch_uplink_info{guid="0x506b4b03005c2740",port="35",switch="iswr0l1",uplink="p0001 HCA-1",uplink_guid="0x506b4b0300cc02a6",uplink_lid="1432",uplink_port="1",uplink_type="CA"} 1
+		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="1",switch="iswr1l1",uplink="ib-i1l2s01",uplink_guid="0x7cfe900300b07320",uplink_lid="1516",uplink_port="1",uplink_type="SW"} 1
+		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="10",switch="iswr1l1",uplink="o0001 HCA-1",uplink_guid="0x7cfe9003003b4bde",uplink_lid="134",uplink_port="1",uplink_type="CA"} 1
+		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="11",switch="iswr1l1",uplink="o0002 HCA-1",uplink_guid="0x7cfe9003003b4b96",uplink_lid="133",uplink_port="1",uplink_type="CA"} 1
 	`
 	collector := NewSwitchCollector(&switchDevices, false, log.NewNopLogger())
 	gatherers := setupGatherer(collector)
@@ -207,8 +207,8 @@ func TestSwitchCollectorFull(t *testing.T) {
 		infiniband_exporter_collect_timeouts{collector="switch"} 0
 		# HELP infiniband_switch_info Infiniband switch information
 		# TYPE infiniband_switch_info gauge
-		infiniband_switch_info{guid="0x506b4b03005c2740",lid="2052",switch="ib-i4l1s01"} 1
-		infiniband_switch_info{guid="0x7cfe9003009ce5b0",lid="1719",switch="ib-i1l1s01"} 1
+		infiniband_switch_info{guid="0x506b4b03005c2740",lid="2052",switch="iswr0l1"} 1
+		infiniband_switch_info{guid="0x7cfe9003009ce5b0",lid="1719",switch="iswr1l1"} 1
 		# HELP infiniband_switch_port_buffer_overrun_errors_total Infiniband switch port PortBufferOverrunErrors
 		# TYPE infiniband_switch_port_buffer_overrun_errors_total counter
 		infiniband_switch_port_buffer_overrun_errors_total{guid="0x506b4b03005c2740",port="1"} 0
@@ -363,10 +363,10 @@ func TestSwitchCollectorFull(t *testing.T) {
 		infiniband_switch_port_vl15_dropped_total{guid="0x7cfe9003009ce5b0",port="2"} 0
 		# HELP infiniband_switch_uplink_info Infiniband switch uplink information
 		# TYPE infiniband_switch_uplink_info gauge
-		infiniband_switch_uplink_info{guid="0x506b4b03005c2740",port="35",switch="ib-i4l1s01",uplink="p0001 HCA-1",uplink_guid="0x506b4b0300cc02a6",uplink_lid="1432",uplink_port="1",uplink_type="CA"} 1
-		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="1",switch="ib-i1l1s01",uplink="ib-i1l2s01",uplink_guid="0x7cfe900300b07320",uplink_lid="1516",uplink_port="1",uplink_type="SW"} 1
-		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="10",switch="ib-i1l1s01",uplink="o0001 HCA-1",uplink_guid="0x7cfe9003003b4bde",uplink_lid="134",uplink_port="1",uplink_type="CA"} 1
-		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="11",switch="ib-i1l1s01",uplink="o0002 HCA-1",uplink_guid="0x7cfe9003003b4b96",uplink_lid="133",uplink_port="1",uplink_type="CA"} 1
+		infiniband_switch_uplink_info{guid="0x506b4b03005c2740",port="35",switch="iswr0l1",uplink="p0001 HCA-1",uplink_guid="0x506b4b0300cc02a6",uplink_lid="1432",uplink_port="1",uplink_type="CA"} 1
+		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="1",switch="iswr1l1",uplink="ib-i1l2s01",uplink_guid="0x7cfe900300b07320",uplink_lid="1516",uplink_port="1",uplink_type="SW"} 1
+		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="10",switch="iswr1l1",uplink="o0001 HCA-1",uplink_guid="0x7cfe9003003b4bde",uplink_lid="134",uplink_port="1",uplink_type="CA"} 1
+		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="11",switch="iswr1l1",uplink="o0002 HCA-1",uplink_guid="0x7cfe9003003b4b96",uplink_lid="133",uplink_port="1",uplink_type="CA"} 1
 	`
 	collector := NewSwitchCollector(&switchDevices, false, log.NewNopLogger())
 	gatherers := setupGatherer(collector)
