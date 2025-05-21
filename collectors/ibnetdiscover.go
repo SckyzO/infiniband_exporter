@@ -218,7 +218,7 @@ func parseRate(width string, rateStr string) (float64, float64, error) {
 	widthRe := regexp.MustCompile("[0-9]+")
 	widthMatch := widthRe.FindAllString(width, 1)
 	if len(widthMatch) != 1 {
-		return 0, 0, fmt.Errorf("Unable to find match for %s: %v", width, widthMatch)
+		return 0, 0, fmt.Errorf("unable to find match for %s: %v", width, widthMatch)
 	}
 	widthMultipler, _ := strconv.ParseFloat(widthMatch[0], 64)
 	if laneRate, ok := laneRates[rateStr]; ok {
@@ -227,7 +227,7 @@ func parseRate(width string, rateStr string) (float64, float64, error) {
 		effectiveRate := laneRate[1] * baseRate
 		return rawRate, effectiveRate, nil
 	}
-	return 0, 0, fmt.Errorf("Unknown rate %s", rateStr)
+	return 0, 0, fmt.Errorf("unknown rate %s", rateStr)
 }
 
 func isPairedQuotesName(name string) bool {
@@ -243,7 +243,7 @@ func parseNames(line string) (string, string, error) {
 		re := regexp.MustCompile(`\( '(.+)' - '(.+)' \)`)
 		matches := re.FindStringSubmatch(line)
 		if len(matches) != 3 {
-			return "", "", fmt.Errorf("Unable to extract names using regexp")
+			return "", "", fmt.Errorf("unable to extract names using regexp")
 		}
 		portName := strings.TrimSpace(matches[1])
 		uplinkName := strings.TrimSpace(matches[2])
@@ -256,7 +256,7 @@ func parseNames(line string) (string, string, error) {
 			return strings.TrimSpace(portName[:idx]), "", nil
 		}
 	}
-	return "", "", fmt.Errorf("Unable to extract names")
+	return "", "", fmt.Errorf("unable to extract names")
 }
 
 func getDeviceGUIDs(devices map[string]InfinibandDevice) []string {
