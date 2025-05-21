@@ -95,29 +95,29 @@ func NewIbswinfoCollector(devices *[]InfinibandDevice, runonce bool, logger log.
 		logger:    log.With(logger, "collector", collector),
 		collector: collector,
 		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_duration_seconds"),
-			"Duration of collection", []string{"guid", "collector"}, nil),
+			"Duration of collection", []string{"guid", "collector", "switch"}, nil),
 		Error: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_error"),
-			"Indicates if collect error", []string{"guid", "collector"}, nil),
+			"Indicates if collect error", []string{"guid", "collector", "switch"}, nil),
 		Timeout: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_timeout"),
-			"Indicates if collect timeout", []string{"guid", "collector"}, nil),
+			"Indicates if collect timeout", []string{"guid", "collector", "switch"}, nil),
 		HardwareInfo: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "hardware_info"),
 			"Infiniband switch hardware info", []string{"guid", "firmware_version", "psid", "part_number", "serial_number", "switch"}, nil),
 		Uptime: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "uptime_seconds"),
-			"Infiniband switch uptime in seconds", []string{"guid"}, nil),
+			"Infiniband switch uptime in seconds", []string{"guid", "switch"}, nil),
 		PowerSupplyStatus: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_status_info"),
-			"Infiniband switch power supply status", []string{"guid", "psu", "status"}, nil),
+			"Infiniband switch power supply status", []string{"guid", "psu", "status", "switch"}, nil),
 		PowerSupplyDCPower: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_dc_power_status_info"),
-			"Infiniband switch power supply DC power status", []string{"guid", "psu", "status"}, nil),
+			"Infiniband switch power supply DC power status", []string{"guid", "psu", "status", "switch"}, nil),
 		PowerSupplyFanStatus: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_fan_status_info"),
-			"Infiniband switch power supply fan status", []string{"guid", "psu", "status"}, nil),
+			"Infiniband switch power supply fan status", []string{"guid", "psu", "status", "switch"}, nil),
 		PowerSupplyWatts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_watts"),
-			"Infiniband switch power supply watts", []string{"guid", "psu"}, nil),
+			"Infiniband switch power supply watts", []string{"guid", "psu", "switch"}, nil),
 		Temp: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "temperature_celsius"),
-			"Infiniband switch temperature celsius", []string{"guid"}, nil),
+			"Infiniband switch temperature celsius", []string{"guid", "switch"}, nil),
 		FanStatus: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "fan_status_info"),
-			"Infiniband switch fan status", []string{"guid", "status"}, nil),
+			"Infiniband switch fan status", []string{"guid", "status", "switch"}, nil),
 		FanRPM: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "fan_rpm"),
-			"Infiniband switch fan RPM", []string{"guid", "fan"}, nil),
+			"Infiniband switch fan RPM", []string{"guid", "fan", "switch"}, nil),
 	}
 }
 
@@ -144,33 +144,33 @@ func (s *IbswinfoCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, swinfo := range swinfos {
 		ch <- prometheus.MustNewConstMetric(s.HardwareInfo, prometheus.GaugeValue, 1, swinfo.device.GUID,
 			swinfo.FirmwareVersion, swinfo.PSID, swinfo.PartNumber, swinfo.SerialNumber, swinfo.device.Name)
-		ch <- prometheus.MustNewConstMetric(s.Uptime, prometheus.GaugeValue, swinfo.Uptime, swinfo.device.GUID)
-		ch <- prometheus.MustNewConstMetric(s.Duration, prometheus.GaugeValue, swinfo.duration, swinfo.device.GUID, s.collector)
-		ch <- prometheus.MustNewConstMetric(s.Error, prometheus.GaugeValue, swinfo.error, swinfo.device.GUID, s.collector)
-		ch <- prometheus.MustNewConstMetric(s.Timeout, prometheus.GaugeValue, swinfo.timeout, swinfo.device.GUID, s.collector)
+		ch <- prometheus.MustNewConstMetric(s.Uptime, prometheus.GaugeValue, swinfo.Uptime, swinfo.device.GUID, swinfo.device.Name)
+		ch <- prometheus.MustNewConstMetric(s.Duration, prometheus.GaugeValue, swinfo.duration, swinfo.device.GUID, s.collector, swinfo.device.Name)
+		ch <- prometheus.MustNewConstMetric(s.Error, prometheus.GaugeValue, swinfo.error, swinfo.device.GUID, s.collector, swinfo.device.Name)
+		ch <- prometheus.MustNewConstMetric(s.Timeout, prometheus.GaugeValue, swinfo.timeout, swinfo.device.GUID, s.collector, swinfo.device.Name)
 		for _, psu := range swinfo.PowerSupplies {
 			if psu.Status != "" {
-				ch <- prometheus.MustNewConstMetric(s.PowerSupplyStatus, prometheus.GaugeValue, 1, swinfo.device.GUID, psu.ID, psu.Status)
+				ch <- prometheus.MustNewConstMetric(s.PowerSupplyStatus, prometheus.GaugeValue, 1, swinfo.device.GUID, psu.ID, psu.Status, swinfo.device.Name)
 			}
 			if psu.DCPower != "" {
-				ch <- prometheus.MustNewConstMetric(s.PowerSupplyDCPower, prometheus.GaugeValue, 1, swinfo.device.GUID, psu.ID, psu.DCPower)
+				ch <- prometheus.MustNewConstMetric(s.PowerSupplyDCPower, prometheus.GaugeValue, 1, swinfo.device.GUID, psu.ID, psu.DCPower, swinfo.device.Name)
 			}
 			if psu.FanStatus != "" {
-				ch <- prometheus.MustNewConstMetric(s.PowerSupplyFanStatus, prometheus.GaugeValue, 1, swinfo.device.GUID, psu.ID, psu.FanStatus)
+				ch <- prometheus.MustNewConstMetric(s.PowerSupplyFanStatus, prometheus.GaugeValue, 1, swinfo.device.GUID, psu.ID, psu.FanStatus, swinfo.device.Name)
 			}
 			if !math.IsNaN(psu.PowerW) {
-				ch <- prometheus.MustNewConstMetric(s.PowerSupplyWatts, prometheus.GaugeValue, psu.PowerW, swinfo.device.GUID, psu.ID)
+				ch <- prometheus.MustNewConstMetric(s.PowerSupplyWatts, prometheus.GaugeValue, psu.PowerW, swinfo.device.GUID, psu.ID, swinfo.device.Name)
 			}
 		}
 		if !math.IsNaN(swinfo.Temp) {
-			ch <- prometheus.MustNewConstMetric(s.Temp, prometheus.GaugeValue, swinfo.Temp, swinfo.device.GUID)
+			ch <- prometheus.MustNewConstMetric(s.Temp, prometheus.GaugeValue, swinfo.Temp, swinfo.device.GUID, swinfo.device.Name)
 		}
 		if swinfo.FanStatus != "" {
-			ch <- prometheus.MustNewConstMetric(s.FanStatus, prometheus.GaugeValue, 1, swinfo.device.GUID, swinfo.FanStatus)
+			ch <- prometheus.MustNewConstMetric(s.FanStatus, prometheus.GaugeValue, 1, swinfo.device.GUID, swinfo.FanStatus, swinfo.device.Name)
 		}
 		for _, fan := range swinfo.Fans {
 			if !math.IsNaN(fan.RPM) {
-				ch <- prometheus.MustNewConstMetric(s.FanRPM, prometheus.GaugeValue, fan.RPM, swinfo.device.GUID, fan.ID)
+				ch <- prometheus.MustNewConstMetric(s.FanRPM, prometheus.GaugeValue, fan.RPM, swinfo.device.GUID, fan.ID, swinfo.device.Name)
 			}
 		}
 	}

@@ -223,63 +223,63 @@ func TestIbswinfoCollector(t *testing.T) {
 		infiniband_exporter_collect_timeouts{collector="ibswinfo"} 0
 		# HELP infiniband_switch_fan_rpm Infiniband switch fan RPM
 		# TYPE infiniband_switch_fan_rpm gauge
-		infiniband_switch_fan_rpm{fan="1",guid="0x506b4b03005c2740"} 6125
-		infiniband_switch_fan_rpm{fan="1",guid="0x7cfe9003009ce5b0"} 8493
-		infiniband_switch_fan_rpm{fan="2",guid="0x506b4b03005c2740"} 5251
-		infiniband_switch_fan_rpm{fan="2",guid="0x7cfe9003009ce5b0"} 7349
-		infiniband_switch_fan_rpm{fan="3",guid="0x506b4b03005c2740"} 6013
-		infiniband_switch_fan_rpm{fan="3",guid="0x7cfe9003009ce5b0"} 8441
-		infiniband_switch_fan_rpm{fan="4",guid="0x506b4b03005c2740"} 5335
-		infiniband_switch_fan_rpm{fan="4",guid="0x7cfe9003009ce5b0"} 7270
-		infiniband_switch_fan_rpm{fan="5",guid="0x506b4b03005c2740"} 6068
-		infiniband_switch_fan_rpm{fan="5",guid="0x7cfe9003009ce5b0"} 8337
-		infiniband_switch_fan_rpm{fan="6",guid="0x506b4b03005c2740"} 5423
-		infiniband_switch_fan_rpm{fan="6",guid="0x7cfe9003009ce5b0"} 7156
-		infiniband_switch_fan_rpm{fan="7",guid="0x506b4b03005c2740"} 5854
-		infiniband_switch_fan_rpm{fan="7",guid="0x7cfe9003009ce5b0"} 8441
-		infiniband_switch_fan_rpm{fan="8",guid="0x506b4b03005c2740"} 5467
-		infiniband_switch_fan_rpm{fan="8",guid="0x7cfe9003009ce5b0"} 7232
-		infiniband_switch_fan_rpm{fan="9",guid="0x506b4b03005c2740"} 5906
+		infiniband_switch_fan_rpm{fan="1",guid="0x506b4b03005c2740",switch="iswr0l1"} 6125
+		infiniband_switch_fan_rpm{fan="1",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 8493
+		infiniband_switch_fan_rpm{fan="2",guid="0x506b4b03005c2740",switch="iswr0l1"} 5251
+		infiniband_switch_fan_rpm{fan="2",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 7349
+		infiniband_switch_fan_rpm{fan="3",guid="0x506b4b03005c2740",switch="iswr0l1"} 6013
+		infiniband_switch_fan_rpm{fan="3",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 8441
+		infiniband_switch_fan_rpm{fan="4",guid="0x506b4b03005c2740",switch="iswr0l1"} 5335
+		infiniband_switch_fan_rpm{fan="4",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 7270
+		infiniband_switch_fan_rpm{fan="5",guid="0x506b4b03005c2740",switch="iswr0l1"} 6068
+		infiniband_switch_fan_rpm{fan="5",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 8337
+		infiniband_switch_fan_rpm{fan="6",guid="0x506b4b03005c2740",switch="iswr0l1"} 5423
+		infiniband_switch_fan_rpm{fan="6",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 7156
+		infiniband_switch_fan_rpm{fan="7",guid="0x506b4b03005c2740",switch="iswr0l1"} 5854
+		infiniband_switch_fan_rpm{fan="7",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 8441
+		infiniband_switch_fan_rpm{fan="8",guid="0x506b4b03005c2740",switch="iswr0l1"} 5467
+		infiniband_switch_fan_rpm{fan="8",guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 7232
+		infiniband_switch_fan_rpm{fan="9",guid="0x506b4b03005c2740",switch="iswr0l1"} 5906
 		# HELP infiniband_switch_fan_status_info Infiniband switch fan status
 		# TYPE infiniband_switch_fan_status_info gauge
-		infiniband_switch_fan_status_info{guid="0x506b4b03005c2740",status="OK"} 1
-		infiniband_switch_fan_status_info{guid="0x7cfe9003009ce5b0",status="ERROR"} 1
+		infiniband_switch_fan_status_info{guid="0x506b4b03005c2740",status="OK",switch="iswr0l1"} 1
+		infiniband_switch_fan_status_info{guid="0x7cfe9003009ce5b0",status="ERROR",switch="iswr1l1"} 1
 		# HELP infiniband_switch_hardware_info Infiniband switch hardware info
 		# TYPE infiniband_switch_hardware_info gauge
-		infiniband_switch_hardware_info{firmware_version="11.2008.2102",guid="0x7cfe9003009ce5b0",part_number="MSB7790-ES2F",psid="MT_1880110032",serial_number="MT1943X00498",switch="ib-i1l1s01"} 1
-		infiniband_switch_hardware_info{firmware_version="27.2010.3118",guid="0x506b4b03005c2740",part_number="MQM8790-HS2F",psid="MT_0000000063",serial_number="MT2152T10239",switch="ib-i4l1s01"} 1
+		infiniband_switch_hardware_info{firmware_version="11.2008.2102",guid="0x7cfe9003009ce5b0",part_number="MSB7790-ES2F",psid="MT_1880110032",serial_number="MT1943X00498",switch="iswr1l1"} 1
+		infiniband_switch_hardware_info{firmware_version="27.2010.3118",guid="0x506b4b03005c2740",part_number="MQM8790-HS2F",psid="MT_0000000063",serial_number="MT2152T10239",switch="iswr0l1"} 1
 		# HELP infiniband_switch_power_supply_dc_power_status_info Infiniband switch power supply DC power status
 		# TYPE infiniband_switch_power_supply_dc_power_status_info gauge
-		infiniband_switch_power_supply_dc_power_status_info{guid="0x506b4b03005c2740",psu="0",status="OK"} 1
-		infiniband_switch_power_supply_dc_power_status_info{guid="0x506b4b03005c2740",psu="1",status="OK"} 1
-		infiniband_switch_power_supply_dc_power_status_info{guid="0x7cfe9003009ce5b0",psu="0",status="OK"} 1
-		infiniband_switch_power_supply_dc_power_status_info{guid="0x7cfe9003009ce5b0",psu="1",status="OK"} 1
+		infiniband_switch_power_supply_dc_power_status_info{guid="0x506b4b03005c2740",psu="0",status="OK",switch="iswr0l1"} 1
+		infiniband_switch_power_supply_dc_power_status_info{guid="0x506b4b03005c2740",psu="1",status="OK",switch="iswr0l1"} 1
+		infiniband_switch_power_supply_dc_power_status_info{guid="0x7cfe9003009ce5b0",psu="0",status="OK",switch="iswr1l1"} 1
+		infiniband_switch_power_supply_dc_power_status_info{guid="0x7cfe9003009ce5b0",psu="1",status="OK",switch="iswr1l1"} 1
 		# HELP infiniband_switch_power_supply_fan_status_info Infiniband switch power supply fan status
 		# TYPE infiniband_switch_power_supply_fan_status_info gauge
-		infiniband_switch_power_supply_fan_status_info{guid="0x506b4b03005c2740",psu="0",status="OK"} 1
-		infiniband_switch_power_supply_fan_status_info{guid="0x506b4b03005c2740",psu="1",status="OK"} 1
-		infiniband_switch_power_supply_fan_status_info{guid="0x7cfe9003009ce5b0",psu="0",status="OK"} 1
-		infiniband_switch_power_supply_fan_status_info{guid="0x7cfe9003009ce5b0",psu="1",status="OK"} 1
+		infiniband_switch_power_supply_fan_status_info{guid="0x506b4b03005c2740",psu="0",status="OK",switch="iswr0l1"} 1
+		infiniband_switch_power_supply_fan_status_info{guid="0x506b4b03005c2740",psu="1",status="OK",switch="iswr0l1"} 1
+		infiniband_switch_power_supply_fan_status_info{guid="0x7cfe9003009ce5b0",psu="0",status="OK",switch="iswr1l1"} 1
+		infiniband_switch_power_supply_fan_status_info{guid="0x7cfe9003009ce5b0",psu="1",status="OK",switch="iswr1l1"} 1
 		# HELP infiniband_switch_power_supply_status_info Infiniband switch power supply status
 		# TYPE infiniband_switch_power_supply_status_info gauge
-		infiniband_switch_power_supply_status_info{guid="0x506b4b03005c2740",psu="0",status="OK"} 1
-		infiniband_switch_power_supply_status_info{guid="0x506b4b03005c2740",psu="1",status="OK"} 1
-		infiniband_switch_power_supply_status_info{guid="0x7cfe9003009ce5b0",psu="0",status="OK"} 1
-		infiniband_switch_power_supply_status_info{guid="0x7cfe9003009ce5b0",psu="1",status="OK"} 1
+		infiniband_switch_power_supply_status_info{guid="0x506b4b03005c2740",psu="0",status="OK",switch="iswr0l1"} 1
+		infiniband_switch_power_supply_status_info{guid="0x506b4b03005c2740",psu="1",status="OK",switch="iswr0l1"} 1
+		infiniband_switch_power_supply_status_info{guid="0x7cfe9003009ce5b0",psu="0",status="OK",switch="iswr1l1"} 1
+		infiniband_switch_power_supply_status_info{guid="0x7cfe9003009ce5b0",psu="1",status="OK",switch="iswr1l1"} 1
 		# HELP infiniband_switch_power_supply_watts Infiniband switch power supply watts
 		# TYPE infiniband_switch_power_supply_watts gauge
-		infiniband_switch_power_supply_watts{guid="0x506b4b03005c2740",psu="0"} 154
-		infiniband_switch_power_supply_watts{guid="0x506b4b03005c2740",psu="1"} 134
-		infiniband_switch_power_supply_watts{guid="0x7cfe9003009ce5b0",psu="0"} 72
-		infiniband_switch_power_supply_watts{guid="0x7cfe9003009ce5b0",psu="1"} 71
+		infiniband_switch_power_supply_watts{guid="0x506b4b03005c2740",psu="0",switch="iswr0l1"} 154
+		infiniband_switch_power_supply_watts{guid="0x506b4b03005c2740",psu="1",switch="iswr0l1"} 134
+		infiniband_switch_power_supply_watts{guid="0x7cfe9003009ce5b0",psu="0",switch="iswr1l1"} 72
+		infiniband_switch_power_supply_watts{guid="0x7cfe9003009ce5b0",psu="1",switch="iswr1l1"} 71
 		# HELP infiniband_switch_temperature_celsius Infiniband switch temperature celsius
 		# TYPE infiniband_switch_temperature_celsius gauge
-		infiniband_switch_temperature_celsius{guid="0x506b4b03005c2740"} 53
-		infiniband_switch_temperature_celsius{guid="0x7cfe9003009ce5b0"} 45
+		infiniband_switch_temperature_celsius{guid="0x506b4b03005c2740",switch="iswr0l1"} 53
+		infiniband_switch_temperature_celsius{guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 45
 		# HELP infiniband_switch_uptime_seconds Infiniband switch uptime in seconds
 		# TYPE infiniband_switch_uptime_seconds gauge
-		infiniband_switch_uptime_seconds{guid="0x506b4b03005c2740"} 8301347
-        infiniband_switch_uptime_seconds{guid="0x7cfe9003009ce5b0"} 13862333
+		infiniband_switch_uptime_seconds{guid="0x506b4b03005c2740",switch="iswr0l1"} 8301347
+        infiniband_switch_uptime_seconds{guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 13862333
 	`
 	collector := NewIbswinfoCollector(&switchDevices, false, log.NewNopLogger())
 	gatherers := setupGatherer(collector)
