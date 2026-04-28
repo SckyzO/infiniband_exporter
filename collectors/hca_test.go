@@ -55,104 +55,104 @@ func TestHCACollector(t *testing.T) {
 		infiniband_hca_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",lid="134"} 1
 		# HELP infiniband_hca_port_excessive_buffer_overrun_errors_total Infiniband HCA port ExcessiveBufferOverrunErrors
 		# TYPE infiniband_hca_port_excessive_buffer_overrun_errors_total counter
-		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_link_downed_total Infiniband HCA port LinkDownedCounter
 		# TYPE infiniband_hca_port_link_downed_total counter
-		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_link_error_recovery_total Infiniband HCA port LinkErrorRecoveryCounter
 		# TYPE infiniband_hca_port_link_error_recovery_total counter
-		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_local_link_integrity_errors_total Infiniband HCA port LocalLinkIntegrityErrors
 		# TYPE infiniband_hca_port_local_link_integrity_errors_total counter
-		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_multicast_receive_packets_total Infiniband HCA port PortMulticastRcvPkts
 		# TYPE infiniband_hca_port_multicast_receive_packets_total counter
-		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4b96",port="1"} 3732373137
-		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4bde",port="1"} 3732158589
+		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 3732373137
+		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 3732158589
 		# HELP infiniband_hca_port_multicast_transmit_packets_total Infiniband HCA port PortMulticastXmitPkts
 		# TYPE infiniband_hca_port_multicast_transmit_packets_total counter
-		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4b96",port="1"} 544690
-		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4bde",port="1"} 721488
+		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 544690
+		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 721488
 		# HELP infiniband_hca_port_qp1_dropped_total Infiniband HCA port QP1Dropped
 		# TYPE infiniband_hca_port_qp1_dropped_total counter
-		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_constraint_errors_total Infiniband HCA port PortRcvConstraintErrors
 		# TYPE infiniband_hca_port_receive_constraint_errors_total counter
-		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_data_bytes_total Infiniband HCA port PortRcvData
 		# TYPE infiniband_hca_port_receive_data_bytes_total counter
-		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4b96",port="1"} 148901607811540
-		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4bde",port="1"} 39009938353200
+		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 148901607811540
+		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 39009938353200
 		# HELP infiniband_hca_port_receive_errors_total Infiniband HCA port PortRcvErrors
 		# TYPE infiniband_hca_port_receive_errors_total counter
-		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_packets_total Infiniband HCA port PortRcvPkts
 		# TYPE infiniband_hca_port_receive_packets_total counter
-		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4b96",port="1"} 100583719365
-		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4bde",port="1"} 33038722564
+		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 100583719365
+		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 33038722564
 		# HELP infiniband_hca_port_receive_remote_physical_errors_total Infiniband HCA port PortRcvRemotePhysicalErrors
 		# TYPE infiniband_hca_port_receive_remote_physical_errors_total counter
-		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_switch_relay_errors_total Infiniband HCA port PortRcvSwitchRelayErrors
 		# TYPE infiniband_hca_port_receive_switch_relay_errors_total counter
-		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_symbol_error_total Infiniband HCA port SymbolErrorCounter
 		# TYPE infiniband_hca_port_symbol_error_total counter
-		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_transmit_constraint_errors_total Infiniband HCA port PortXmitConstraintErrors
 		# TYPE infiniband_hca_port_transmit_constraint_errors_total counter
-		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_transmit_data_bytes_total Infiniband HCA port PortXmitData
 		# TYPE infiniband_hca_port_transmit_data_bytes_total counter
-		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4b96",port="1"} 148434707415420
-		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4bde",port="1"} 36198369975904
+		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 148434707415420
+		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 36198369975904
 		# HELP infiniband_hca_port_transmit_discards_total Infiniband HCA port PortXmitDiscards
 		# TYPE infiniband_hca_port_transmit_discards_total counter
-		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_transmit_packets_total Infiniband HCA port PortXmitPkts
 		# TYPE infiniband_hca_port_transmit_packets_total counter
-		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4b96",port="1"} 96917117320
-		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4bde",port="1"} 28825338611
+		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 96917117320
+		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 28825338611
 		# HELP infiniband_hca_port_transmit_wait_total Infiniband HCA port PortXmitWait
 		# TYPE infiniband_hca_port_transmit_wait_total counter
-		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_unicast_receive_packets_total Infiniband HCA port PortUnicastRcvPkts
 		# TYPE infiniband_hca_port_unicast_receive_packets_total counter
-		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4b96",port="1"} 96851346228
-		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4bde",port="1"} 29306563974
+		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 96851346228
+		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 29306563974
 		# HELP infiniband_hca_port_unicast_transmit_packets_total Infiniband HCA port PortUnicastXmitPkts
 		# TYPE infiniband_hca_port_unicast_transmit_packets_total counter
-		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4b96",port="1"} 96916572630
-		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4bde",port="1"} 28824617123
+		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 96916572630
+		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 28824617123
 		# HELP infiniband_hca_port_vl15_dropped_total Infiniband HCA port VL15Dropped
 		# TYPE infiniband_hca_port_vl15_dropped_total counter
-		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_rate_bytes_per_second Infiniband HCA rate
 		# TYPE infiniband_hca_rate_bytes_per_second gauge
-		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4b96"} 1.25e+10
-		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4bde"} 1.25e+10
+		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1"} 1.25e+10
+		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1"} 1.25e+10
 		# HELP infiniband_hca_raw_rate_bytes_per_second Infiniband HCA raw rate
 		# TYPE infiniband_hca_raw_rate_bytes_per_second gauge
-		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4b96"} 1.2890625e+10
-		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4bde"} 1.2890625e+10
+		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1"} 1.2890625e+10
+		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1"} 1.2890625e+10
 		# HELP infiniband_hca_uplink_info Infiniband HCA uplink information
 		# TYPE infiniband_hca_uplink_info gauge
-		infiniband_hca_uplink_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="11",uplink_type="SW"} 1
-		infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="10",uplink_type="SW"} 1
+		infiniband_hca_uplink_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="11",uplink_type="SW"} 1
+		infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="10",uplink_type="SW"} 1
 	`
 	collector := NewHCACollector(&hcaDevices, false, log.NewNopLogger())
 	gatherers := setupGatherer(collector)
@@ -198,128 +198,128 @@ func TestHCACollectorFull(t *testing.T) {
 		infiniband_hca_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",lid="134"} 1
 		# HELP infiniband_hca_port_buffer_overrun_errors_total Infiniband HCA port PortBufferOverrunErrors
 		# TYPE infiniband_hca_port_buffer_overrun_errors_total counter
-		infiniband_hca_port_buffer_overrun_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_buffer_overrun_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_buffer_overrun_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_buffer_overrun_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_dli_mapping_errors_total Infiniband HCA port PortDLIDMappingErrors
 		# TYPE infiniband_hca_port_dli_mapping_errors_total counter
-		infiniband_hca_port_dli_mapping_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_dli_mapping_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_dli_mapping_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_dli_mapping_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_excessive_buffer_overrun_errors_total Infiniband HCA port ExcessiveBufferOverrunErrors
 		# TYPE infiniband_hca_port_excessive_buffer_overrun_errors_total counter
-		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_excessive_buffer_overrun_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_link_downed_total Infiniband HCA port LinkDownedCounter
 		# TYPE infiniband_hca_port_link_downed_total counter
-		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_link_downed_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_link_error_recovery_total Infiniband HCA port LinkErrorRecoveryCounter
 		# TYPE infiniband_hca_port_link_error_recovery_total counter
-		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_link_error_recovery_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_local_link_integrity_errors_total Infiniband HCA port LocalLinkIntegrityErrors
 		# TYPE infiniband_hca_port_local_link_integrity_errors_total counter
-		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_local_link_integrity_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_local_physical_errors_total Infiniband HCA port PortLocalPhysicalErrors
 		# TYPE infiniband_hca_port_local_physical_errors_total counter
-		infiniband_hca_port_local_physical_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_local_physical_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_local_physical_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_local_physical_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_looping_errors_total Infiniband HCA port PortLoopingErrors
 		# TYPE infiniband_hca_port_looping_errors_total counter
-		infiniband_hca_port_looping_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_looping_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_looping_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_looping_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_malformed_packet_errors_total Infiniband HCA port PortMalformedPktErrors
 		# TYPE infiniband_hca_port_malformed_packet_errors_total counter
-		infiniband_hca_port_malformed_packet_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_malformed_packet_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_malformed_packet_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_malformed_packet_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_multicast_receive_packets_total Infiniband HCA port PortMulticastRcvPkts
 		# TYPE infiniband_hca_port_multicast_receive_packets_total counter
-		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4b96",port="1"} 3732373137
-		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4bde",port="1"} 3732158589
+		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 3732373137
+		infiniband_hca_port_multicast_receive_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 3732158589
 		# HELP infiniband_hca_port_multicast_transmit_packets_total Infiniband HCA port PortMulticastXmitPkts
 		# TYPE infiniband_hca_port_multicast_transmit_packets_total counter
-		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4b96",port="1"} 544690
-		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4bde",port="1"} 721488
+		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 544690
+		infiniband_hca_port_multicast_transmit_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 721488
 		# HELP infiniband_hca_port_qp1_dropped_total Infiniband HCA port QP1Dropped
 		# TYPE infiniband_hca_port_qp1_dropped_total counter
-		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_qp1_dropped_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_constraint_errors_total Infiniband HCA port PortRcvConstraintErrors
 		# TYPE infiniband_hca_port_receive_constraint_errors_total counter
-		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_constraint_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_data_bytes_total Infiniband HCA port PortRcvData
 		# TYPE infiniband_hca_port_receive_data_bytes_total counter
-		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4b96",port="1"} 148901607811540
-		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4bde",port="1"} 39009938353200
+		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 148901607811540
+		infiniband_hca_port_receive_data_bytes_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 39009938353200
 		# HELP infiniband_hca_port_receive_errors_total Infiniband HCA port PortRcvErrors
 		# TYPE infiniband_hca_port_receive_errors_total counter
-		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_packets_total Infiniband HCA port PortRcvPkts
 		# TYPE infiniband_hca_port_receive_packets_total counter
-		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4b96",port="1"} 100583719365
-		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4bde",port="1"} 33038722564
+		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 100583719365
+		infiniband_hca_port_receive_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 33038722564
 		# HELP infiniband_hca_port_receive_remote_physical_errors_total Infiniband HCA port PortRcvRemotePhysicalErrors
 		# TYPE infiniband_hca_port_receive_remote_physical_errors_total counter
-		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_remote_physical_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_receive_switch_relay_errors_total Infiniband HCA port PortRcvSwitchRelayErrors
 		# TYPE infiniband_hca_port_receive_switch_relay_errors_total counter
-		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_receive_switch_relay_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_symbol_error_total Infiniband HCA port SymbolErrorCounter
 		# TYPE infiniband_hca_port_symbol_error_total counter
-		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_symbol_error_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_transmit_constraint_errors_total Infiniband HCA port PortXmitConstraintErrors
 		# TYPE infiniband_hca_port_transmit_constraint_errors_total counter
-		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_transmit_constraint_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_transmit_data_bytes_total Infiniband HCA port PortXmitData
 		# TYPE infiniband_hca_port_transmit_data_bytes_total counter
-		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4b96",port="1"} 148434707415420
-		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4bde",port="1"} 36198369975904
+		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 148434707415420
+		infiniband_hca_port_transmit_data_bytes_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 36198369975904
 		# HELP infiniband_hca_port_transmit_discards_total Infiniband HCA port PortXmitDiscards
 		# TYPE infiniband_hca_port_transmit_discards_total counter
-		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_transmit_discards_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_transmit_packets_total Infiniband HCA port PortXmitPkts
 		# TYPE infiniband_hca_port_transmit_packets_total counter
-		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4b96",port="1"} 96917117320
-		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4bde",port="1"} 28825338611
+		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 96917117320
+		infiniband_hca_port_transmit_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 28825338611
 		# HELP infiniband_hca_port_transmit_wait_total Infiniband HCA port PortXmitWait
 		# TYPE infiniband_hca_port_transmit_wait_total counter
-		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_transmit_wait_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_unicast_receive_packets_total Infiniband HCA port PortUnicastRcvPkts
 		# TYPE infiniband_hca_port_unicast_receive_packets_total counter
-		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4b96",port="1"} 96851346228
-		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4bde",port="1"} 29306563974
+		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 96851346228
+		infiniband_hca_port_unicast_receive_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 29306563974
 		# HELP infiniband_hca_port_unicast_transmit_packets_total Infiniband HCA port PortUnicastXmitPkts
 		# TYPE infiniband_hca_port_unicast_transmit_packets_total counter
-		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4b96",port="1"} 96916572630
-		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4bde",port="1"} 28824617123
+		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 96916572630
+		infiniband_hca_port_unicast_transmit_packets_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 28824617123
 		# HELP infiniband_hca_port_vl_mapping_errors_total Infiniband HCA port PortVLMappingErrors
 		# TYPE infiniband_hca_port_vl_mapping_errors_total counter
-		infiniband_hca_port_vl_mapping_errors_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_vl_mapping_errors_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_vl_mapping_errors_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_vl_mapping_errors_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_port_vl15_dropped_total Infiniband HCA port VL15Dropped
 		# TYPE infiniband_hca_port_vl15_dropped_total counter
-		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4b96",port="1"} 0
-		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4bde",port="1"} 0
+		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch=""} 0
+		infiniband_hca_port_vl15_dropped_total{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch=""} 0
 		# HELP infiniband_hca_rate_bytes_per_second Infiniband HCA rate
 		# TYPE infiniband_hca_rate_bytes_per_second gauge
-		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4b96"} 1.25e+10
-		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4bde"} 1.25e+10
+		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1"} 1.25e+10
+		infiniband_hca_rate_bytes_per_second{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1"} 1.25e+10
 		# HELP infiniband_hca_raw_rate_bytes_per_second Infiniband HCA raw rate
 		# TYPE infiniband_hca_raw_rate_bytes_per_second gauge
-		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4b96"} 1.2890625e+10
-		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4bde"} 1.2890625e+10
+		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1"} 1.2890625e+10
+		infiniband_hca_raw_rate_bytes_per_second{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1"} 1.2890625e+10
 		# HELP infiniband_hca_uplink_info Infiniband HCA uplink information
 		# TYPE infiniband_hca_uplink_info gauge
-		infiniband_hca_uplink_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="11",uplink_type="SW"} 1
-		infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="10",uplink_type="SW"} 1
+		infiniband_hca_uplink_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="11",uplink_type="SW"} 1
+		infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="10",uplink_type="SW"} 1
 	`
 	collector := NewHCACollector(&hcaDevices, false, log.NewNopLogger())
 	gatherers := setupGatherer(collector)

@@ -133,17 +133,17 @@ func TestIbnetdiscoverCollectorTimeout(t *testing.T) {
 
 func TestIbnetdiscoverParse(t *testing.T) {
 	expectedHCAs := []InfinibandDevice{
-		{Type: "CA", LID: "1432", GUID: "0x506b4b0300cc02a6", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10, Name: "p0001 HCA-1",
+		{Type: "CA", LID: "1432", GUID: "0x506b4b0300cc02a6", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10, Name: "p0001 HCA-1", Switch: "ib-i4l1s01",
 			Uplinks: map[string]InfinibandUplink{
 				"1": {Type: "SW", LID: "2052", PortNumber: "35", GUID: "0x506b4b03005c2740", Name: "ib-i4l1s01", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10},
 			},
 		},
-		{Type: "CA", LID: "133", GUID: "0x7cfe9003003b4b96", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10, Name: "o0002 HCA-1",
+		{Type: "CA", LID: "133", GUID: "0x7cfe9003003b4b96", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10, Name: "o0002 HCA-1", Switch: "ib-i1l1s01",
 			Uplinks: map[string]InfinibandUplink{
 				"1": {Type: "SW", LID: "1719", PortNumber: "11", GUID: "0x7cfe9003009ce5b0", Name: "ib-i1l1s01", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10},
 			},
 		},
-		{Type: "CA", LID: "134", GUID: "0x7cfe9003003b4bde", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10, Name: "o0001 HCA-1",
+		{Type: "CA", LID: "134", GUID: "0x7cfe9003003b4bde", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10, Name: "o0001 HCA-1", Switch: "ib-i1l1s01",
 			Uplinks: map[string]InfinibandUplink{
 				"1": {Type: "SW", LID: "1719", PortNumber: "10", GUID: "0x7cfe9003009ce5b0", Name: "ib-i1l1s01", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10},
 			},
@@ -151,12 +151,12 @@ func TestIbnetdiscoverParse(t *testing.T) {
 	}
 
 	expectSwitches := []InfinibandDevice{
-		{Type: "SW", LID: "2052", GUID: "0x506b4b03005c2740", Name: "iswr0l1",
+		{Type: "SW", LID: "2052", GUID: "0x506b4b03005c2740", Name: "ib-i4l1s01", Switch: "p0001 HCA-1",
 			Uplinks: map[string]InfinibandUplink{
 				"35": {Type: "CA", LID: "1432", PortNumber: "1", GUID: "0x506b4b0300cc02a6", Name: "p0001 HCA-1", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10},
 			},
 		},
-		{Type: "SW", LID: "1719", GUID: "0x7cfe9003009ce5b0", Name: "iswr1l1",
+		{Type: "SW", LID: "1719", GUID: "0x7cfe9003009ce5b0", Name: "ib-i1l1s01", Switch: "ib-i1l2s01",
 			Uplinks: map[string]InfinibandUplink{
 				"1":  {Type: "SW", LID: "1516", PortNumber: "1", GUID: "0x7cfe900300b07320", Name: "ib-i1l2s01", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10},
 				"10": {Type: "CA", LID: "134", PortNumber: "1", GUID: "0x7cfe9003003b4bde", Name: "o0001 HCA-1", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10},
@@ -197,12 +197,12 @@ func TestIbnetdiscoverParse(t *testing.T) {
 
 func TestIbnetdiscoverParse2(t *testing.T) {
 	expectedHCAs := []InfinibandDevice{
-		{Type: "CA", LID: "78", GUID: "0x946dae0300630bfe", Rate: 50 * 4 * 125000000, RawRate: 50 * 4 * 125000000, Name: "Mellanox Technologies Aggregation Node",
+		{Type: "CA", LID: "78", GUID: "0x946dae0300630bfe", Rate: 50 * 4 * 125000000, RawRate: 50 * 4 * 125000000, Name: "Mellanox Technologies Aggregation Node", Switch: "5FB0405-leaf-IB01",
 			Uplinks: map[string]InfinibandUplink{
 				"1": {Type: "SW", LID: "51", PortNumber: "81", GUID: "0x946dae0300630bf6", Name: "5FB0405-leaf-IB01", Rate: 50 * 4 * 125000000, RawRate: 50 * 4 * 125000000},
 			},
 		},
-		{Type: "CA", LID: "88", GUID: "0xb83fd20300da1138", Rate: 50 * 4 * 125000000, RawRate: 50 * 4 * 125000000, Name: "worker20 mlx5_3",
+		{Type: "CA", LID: "88", GUID: "0xb83fd20300da1138", Rate: 50 * 4 * 125000000, RawRate: 50 * 4 * 125000000, Name: "worker20 mlx5_3", Switch: "5FB0405-leaf-IB01",
 			Uplinks: map[string]InfinibandUplink{
 				"1": {Type: "SW", LID: "51", PortNumber: "79", GUID: "0x946dae0300630bf6", Name: "5FB0405-leaf-IB01", Rate: 50 * 4 * 125000000, RawRate: 50 * 4 * 125000000},
 			},
@@ -213,7 +213,7 @@ func TestIbnetdiscoverParse2(t *testing.T) {
 		{Type: "SW", LID: "478", GUID: "0x0002c9020040f160", Name: "Infiniscale-IV Mellanox Technologies",
 			Uplinks: map[string]InfinibandUplink{},
 		},
-		{Type: "SW", LID: "9", GUID: "0x946dae030053ec1a", Name: "5FB0406-spine-IB03",
+		{Type: "SW", LID: "9", GUID: "0x946dae030053ec1a", Name: "5FB0406-spine-IB03", Switch: "Mellanox Technologies Aggregation Node",
 			Uplinks: map[string]InfinibandUplink{
 				"81": {Type: "CA", LID: "60", PortNumber: "1", GUID: "0x946dae0300630bfe", Name: "Mellanox Technologies Aggregation Node", Rate: 50 * 4 * 125000000, RawRate: 50 * 4 * 125000000},
 			},
@@ -258,8 +258,8 @@ func TestIbnetdiscoverParse3(t *testing.T) {
 	w := log.NewSyncWriter(os.Stderr)
 	logger := log.NewLogfmtLogger(w)
 	_, _, err = ibnetdiscoverParse(out, logger)
-	if err == nil || !strings.Contains(err.Error(), "Unable to extract names") {
-		t.Errorf("Unexpected error: Unable to extract names")
+	if err == nil || !strings.Contains(err.Error(), "unable to extract names") {
+		t.Errorf("Unexpected error: unable to extract names")
 		return
 	}
 }
@@ -269,8 +269,8 @@ func TestIbnetdiscoverParseErrors(t *testing.T) {
 		Input         string
 		ExpectedError string
 	}{
-		{Input: ibnetdiscoverBadRate, ExpectedError: "Unknown rate ZDR"},
-		{Input: ibnetdiscoverBadName, ExpectedError: "Unable to extract names using regexp"},
+		{Input: ibnetdiscoverBadRate, ExpectedError: "unknown rate ZDR"},
+		{Input: ibnetdiscoverBadName, ExpectedError: "unable to extract names using regexp"},
 	}
 	for i, test := range tests {
 		_, _, err := ibnetdiscoverParse(test.Input, log.NewNopLogger())
@@ -323,8 +323,8 @@ func TestParseRateErrors(t *testing.T) {
 		Rate          string
 		ExpectedError string
 	}{
-		{Width: "??", Rate: "EDR", ExpectedError: "Unable to find match for ??: []"},
-		{Width: "4x", Rate: "ZDR", ExpectedError: "Unknown rate ZDR"},
+		{Width: "??", Rate: "EDR", ExpectedError: "unable to find match for ??: []"},
+		{Width: "4x", Rate: "ZDR", ExpectedError: "unknown rate ZDR"},
 	}
 	for i, test := range tests {
 		_, _, err := parseRate(test.Width, test.Rate)
@@ -374,7 +374,7 @@ func TestParseNamesErrors(t *testing.T) {
 		ExpectedError string
 	}{
 		{Line: "SW  1540 10 0x7cfe900300b07440 4x EDR - CA    16  1 0x7cfe9003003b4b9a ( 'name' )",
-			ExpectedError: "Unable to extract names using regexp"},
+			ExpectedError: "unable to extract names using regexp"},
 	}
 	for i, test := range tests {
 		_, _, err := parseNames(test.Line)

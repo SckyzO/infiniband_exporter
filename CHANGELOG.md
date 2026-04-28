@@ -1,3 +1,12 @@
+## 0.11.0 / 2026-04-28
+
+Independent fork — repository now lives at `github.com/SckyzO/infiniband_exporter`.
+
+* Module path renamed `github.com/treydock/infiniband_exporter` → `github.com/SckyzO/infiniband_exporter`.
+* Removed upstream Prometheus build scaffolding: CircleCI config, `Makefile.common`, `.promu.yml`, RPM spec, Helm chart, and the upstream `Dockerfile`.
+* New container-only `Makefile`: every target (`build`, `test`, `vet`, `lint`, `release-snapshot`) runs inside `golang:1.26.2-alpine` / `golangci/golangci-lint` / `goreleaser` images. The Go toolchain is never invoked on the host.
+* GitHub Actions CI/CD and a refreshed `.golangci.yml` arrive in 0.12.0.
+
 ## 0.10.0 / 2025-01-12
 
 * Support TLS and basic auth (#25)

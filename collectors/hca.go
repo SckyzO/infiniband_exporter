@@ -307,7 +307,9 @@ func (h *HCACollector) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(h.Timeout, prometheus.GaugeValue, metric.timeout, device.GUID, h.collector)
 			ch <- prometheus.MustNewConstMetric(h.Error, prometheus.GaugeValue, metric.error, device.GUID, h.collector)
 			for port, uplink := range device.Uplinks {
-				ch <- prometheus.MustNewConstMetric(h.Uplink, prometheus.GaugeValue, 1, device.GUID, port, device.Switch, device.Name, uplink.Name, uplink.GUID, uplink.Type, uplink.PortNumber, uplink.LID)
+				// Label order must match h.Uplink desc: guid, hca, port, switch,
+				// uplink, uplink_guid, uplink_type, uplink_port, uplink_lid.
+				ch <- prometheus.MustNewConstMetric(h.Uplink, prometheus.GaugeValue, 1, device.GUID, device.Name, port, device.Switch, uplink.Name, uplink.GUID, uplink.Type, uplink.PortNumber, uplink.LID)
 			}
 		}
 	}

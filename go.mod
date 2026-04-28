@@ -1,4 +1,4 @@
-module github.com/treydock/infiniband_exporter
+module github.com/SckyzO/infiniband_exporter
 
 go 1.22
 

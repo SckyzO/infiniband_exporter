@@ -1,10 +1,6 @@
-[![Build Status](https://circleci.com/gh/treydock/infiniband_exporter/tree/master.svg?style=shield)](https://circleci.com/gh/treydock/infiniband_exporter)
-[![GitHub release](https://img.shields.io/github/v/release/treydock/infiniband_exporter?include_prereleases&sort=semver)](https://github.com/treydock/infiniband_exporter/releases/latest)
-![GitHub All Releases](https://img.shields.io/github/downloads/treydock/infiniband_exporter/total)
-[![Go Report Card](https://goreportcard.com/badge/github.com/treydock/infiniband_exporter)](https://goreportcard.com/report/github.com/treydock/infiniband_exporter)
-[![codecov](https://codecov.io/gh/treydock/infiniband_exporter/branch/master/graph/badge.svg)](https://codecov.io/gh/treydock/infiniband_exporter)
-
 # InfiniBand Prometheus exporter
+
+> Independent fork of [`treydock/infiniband_exporter`](https://github.com/treydock/infiniband_exporter), maintained at `github.com/SckyzO/infiniband_exporter`. See `CHANGELOG.md` for the divergence history.
 
 The InfiniBand exporter collects counters from InfiniBand switches and HCAs.
 The exporter supports the `/metrics` endpoint to gather InfiniBand metrics and metrics about the exporter.
@@ -75,21 +71,9 @@ One way to collect these metrics is collect base metrics with Prometheus scrapes
 * `--collector.switch.rcv-err-details`
 * `--perfquery.max-concurrent=8`
 
-## Docker
-
-Example of running the Docker container
-
-```
-docker run -d -p 9315:9315 \
---name infiniband_exporter \
---cap-add=IPC_LOCK \
---device=/dev/infiniband/umad0 \
-treydock/infiniband_exporter
-```
-
 ## Install
 
-Download the [latest release](https://github.com/treydock/infiniband_exporter/releases)
+Download the [latest release](https://github.com/SckyzO/infiniband_exporter/releases)
 
 Add the user that will run `infiniband_exporter`
 
@@ -114,14 +98,21 @@ systemctl start infiniband_exporter@infiniband_exporter.service
 
 ## Build from source
 
-To produce the `infiniband_exporter` binary:
+The Go toolchain is never invoked on the host — every build, test, lint, and
+release operation runs inside a container. You only need `docker` (or `podman`
+aliased to `docker`) installed locally.
 
-```
-make build
-```
+| Target | What it does | Image used |
+| --- | --- | --- |
+| `make build` | Produce the `infiniband_exporter` binary | `golang:1.26.2` |
+| `make test` | `go test -short ./...` | `golang:1.26.2` |
+| `make test-race` | Race detector + coverage profile | `golang:1.26.2` |
+| `make vet` | `go vet ./...` | `golang:1.26.2` |
+| `make fmt` / `make fmt-check` | gofmt write / check | `golang:1.26.2` |
+| `make lint` | `golangci-lint run` | `golangci/golangci-lint:latest` |
+| `make tidy` | `go mod tidy` | `golang:1.26.2-alpine` |
+| `make release-snapshot` | Local GoReleaser dry-run | `goreleaser/goreleaser:latest` |
 
-Or
-
-```
-go get github.com/treydock/infiniband_exporter
-```
+Override the toolchain version with `make GO_VERSION=1.26.3 build`. Module and
+build caches are persisted under `.build/cache/` to keep repeat invocations
+fast.

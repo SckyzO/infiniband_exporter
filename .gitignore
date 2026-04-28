@@ -1,6 +1,11 @@
 /.tarballs
 /.build
+/dist/
 /infiniband_exporter
 /c.out
 /coverage.html
 /coverage.txt
+
+# Local-only: agent guidance/settings, never committed.
+CLAUDE.md
+.claude/

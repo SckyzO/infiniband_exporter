@@ -1,4 +1,0 @@
----
-linters-settings:
-  errcheck:
-    exclude: .golangci.errcheck-exclude
