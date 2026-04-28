@@ -1,3 +1,24 @@
+## 0.13.0 / 2026-04-28
+
+Critical bug fixes, endpoint split, errcheck enabled.
+
+### ⚠️ Breaking
+
+* The IbswinfoCollector's three "collect" metrics have been renamed from `infiniband_switch_collect_*` to `infiniband_ibswinfo_collect_*`. Before this change, both collectors tried to register metrics with the same fully-qualified name but different label sets, which `client_golang` rejects at `MustRegister`. The label set on the renamed metrics is unchanged (`guid`, `collector`, `switch`). Update any alerting rules / dashboards that filtered by `infiniband_switch_collect_*{collector="ibswinfo"}`.
+* `/metrics` no longer exposes `go_*`, `process_*`, `promhttp_*` self-metrics. Those moved to a separate endpoint `/internal/metrics` (still gated by `--web.disable-exporter-metrics`). If a Prometheus scrape job needs both, point it at `/internal/metrics` as a second target — typically with a longer scrape interval.
+
+### Fixed
+
+* Data race in `SwitchCollector.collect` and `HCACollector.collect`: the `errors` and `timeouts` counters were mutated from concurrent goroutines (capped by `--perfquery.max-concurrent`) without synchronization. Both are now `atomic.Uint64`. `go test -race` is now clean.
+* Goroutine-scoped context leak in the rcv-err loop: each iteration's `defer cancelRcvErr()` accumulated until the goroutine returned. Wrapped in a per-iteration closure so the context cancels at the end of each port query.
+* `hca.go`: arguments to `h.Uplink` were already reordered in v0.11.0; this lot adds a regression test (`TestCollectorsCoexist`) that exercises every collector against the same registry, which would have caught the original label-set conflict.
+* `ibnetdiscover` and `perfquery` now capture and surface stderr in their wrapped errors. Previously, IB fabric failures and `mad_rpc` timeouts were silently dropped on the floor.
+
+### Quality
+
+* `errcheck` re-enabled in `.golangci.yml` after a one-pass audit. Functions that documented "always returns nil" (`bytes.Buffer.Write*`, `http.ResponseWriter.Write`, `go-kit/log.Logger.Log`, `context.CancelFunc`) are excluded with rationale.
+* `queryExporter` test helper retries briefly to absorb the race between `go run(...)` startup and the first HTTP probe.
+
 ## 0.12.0 / 2026-04-28
 
 GitHub Actions CI/CD, GoReleaser, lint baseline.

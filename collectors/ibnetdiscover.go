@@ -296,13 +296,16 @@ func ibnetdiscoverArgs() (string, []string) {
 func ibnetdiscover(ctx context.Context) (string, error) {
 	command, args := ibnetdiscoverArgs()
 	cmd := execCommand(ctx, command, args...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if ctx.Err() == context.DeadlineExceeded {
 		return "", ctx.Err()
 	} else if err != nil {
-		return "", err
+		// Surface stderr — without it failures from underlying mad_rpc
+		// or umad layers were lost.
+		return "", fmt.Errorf("%w: %s", err, strings.TrimSpace(stderr.String()))
 	}
-	return out.String(), nil
+	return stdout.String(), nil
 }

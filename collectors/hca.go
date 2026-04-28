@@ -19,6 +19,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
@@ -333,7 +334,9 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 	var counters []PerfQueryCounters
 	metrics := make(map[string]HCAMetrics)
 	var countersLock sync.Mutex
-	var errors, timeouts float64
+	// Concurrent goroutines mutate these counters; atomics keep the race
+	// detector silent and the totals correct.
+	var errors, timeouts uint64
 	limit := make(chan int, *maxConcurrent)
 	wg := &sync.WaitGroup{}
 	for _, device := range *h.devices {
@@ -354,17 +357,17 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 			if err == context.DeadlineExceeded {
 				metric.timeout = 1
 				level.Error(h.logger).Log("msg", "Timeout collecting extended perfquery counters", "guid", device.GUID)
-				timeouts++
+				atomic.AddUint64(&timeouts, 1)
 			} else if err != nil {
 				metric.error = 1
-				level.Error(h.logger).Log("msg", "Error collecting extended perfquery counters", "guid", device.GUID)
-				errors++
+				level.Error(h.logger).Log("msg", "Error collecting extended perfquery counters", "guid", device.GUID, "err", err)
+				atomic.AddUint64(&errors, 1)
 			}
 			if err != nil {
 				return
 			}
 			deviceCounters, errs := perfqueryParse(device, extendedOut, h.logger)
-			errors = errors + errs
+			atomic.AddUint64(&errors, uint64(errs))
 			if *hcaCollectBase {
 				level.Debug(h.logger).Log("msg", "Adding parsed counters", "count", len(deviceCounters), "guid", device.GUID, "name", device.Name)
 				countersLock.Lock()
@@ -373,27 +376,31 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 			}
 			if *hcaCollectRcvErr {
 				for _, deviceCounter := range deviceCounters {
-					ctxRcvErr, cancelRcvErr := context.WithTimeout(context.Background(), *perfqueryTimeout)
-					defer cancelRcvErr()
-					rcvErrStart := time.Now()
-					rcvErrOut, err := PerfqueryExec(device.GUID, deviceCounter.PortSelect, []string{"-E"}, ctxRcvErr)
-					metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
-					if err == context.DeadlineExceeded {
-						metric.rcvErrTimeout = 1
-						level.Error(h.logger).Log("msg", "Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
-						timeouts++
-						continue
-					} else if err != nil {
-						metric.rcvErrError = 1
-						level.Error(h.logger).Log("msg", "Error collecting rcvErr perfquery counters", "guid", device.GUID)
-						errors++
-						continue
-					}
-					rcvErrCounters, errs := perfqueryParse(device, rcvErrOut, h.logger)
-					errors = errors + errs
-					countersLock.Lock()
-					counters = append(counters, rcvErrCounters...)
-					countersLock.Unlock()
+					// Per-iteration scope so the timeout context cancels at
+					// the end of each port query, not at goroutine return.
+					func() {
+						ctxRcvErr, cancelRcvErr := context.WithTimeout(context.Background(), *perfqueryTimeout)
+						defer cancelRcvErr()
+						rcvErrStart := time.Now()
+						rcvErrOut, err := PerfqueryExec(device.GUID, deviceCounter.PortSelect, []string{"-E"}, ctxRcvErr)
+						metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
+						if err == context.DeadlineExceeded {
+							metric.rcvErrTimeout = 1
+							level.Error(h.logger).Log("msg", "Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
+							atomic.AddUint64(&timeouts, 1)
+							return
+						} else if err != nil {
+							metric.rcvErrError = 1
+							level.Error(h.logger).Log("msg", "Error collecting rcvErr perfquery counters", "guid", device.GUID, "err", err)
+							atomic.AddUint64(&errors, 1)
+							return
+						}
+						rcvErrCounters, errs := perfqueryParse(device, rcvErrOut, h.logger)
+						atomic.AddUint64(&errors, uint64(errs))
+						countersLock.Lock()
+						counters = append(counters, rcvErrCounters...)
+						countersLock.Unlock()
+					}()
 				}
 			}
 			countersLock.Lock()
@@ -403,5 +410,5 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 	}
 	wg.Wait()
 	close(limit)
-	return counters, metrics, errors, timeouts
+	return counters, metrics, float64(errors), float64(timeouts)
 }

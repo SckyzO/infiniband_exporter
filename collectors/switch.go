@@ -19,6 +19,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
@@ -331,7 +332,10 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 	var counters []PerfQueryCounters
 	metrics := make(map[string]SwitchMetrics)
 	var countersLock sync.Mutex
-	var errors, timeouts float64
+	// errors/timeouts are mutated from N concurrent goroutines (capped by
+	// --perfquery.max-concurrent); use atomics to avoid the data race that
+	// `go test -race` would otherwise flag.
+	var errors, timeouts uint64
 	limit := make(chan int, *maxConcurrent)
 	wg := &sync.WaitGroup{}
 	for _, device := range *s.devices {
@@ -352,17 +356,17 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 			if err == context.DeadlineExceeded {
 				metric.timeout = 1
 				level.Error(s.logger).Log("msg", "Timeout collecting extended perfquery counters", "guid", device.GUID)
-				timeouts++
+				atomic.AddUint64(&timeouts, 1)
 			} else if err != nil {
 				metric.error = 1
-				level.Error(s.logger).Log("msg", "Error collecting extended perfquery counters", "guid", device.GUID)
-				errors++
+				level.Error(s.logger).Log("msg", "Error collecting extended perfquery counters", "guid", device.GUID, "err", err)
+				atomic.AddUint64(&errors, 1)
 			}
 			if err != nil {
 				return
 			}
 			deviceCounters, errs := perfqueryParse(device, extendedOut, s.logger)
-			errors = errors + errs
+			atomic.AddUint64(&errors, uint64(errs))
 			if *switchCollectBase {
 				level.Debug(s.logger).Log("msg", "Adding parsed counters", "count", len(deviceCounters), "guid", device.GUID, "name", device.Name)
 				countersLock.Lock()
@@ -371,27 +375,33 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 			}
 			if *switchCollectRcvErr {
 				for _, deviceCounter := range deviceCounters {
-					ctxRcvErr, cancelRcvErr := context.WithTimeout(context.Background(), *perfqueryTimeout)
-					defer cancelRcvErr()
-					rcvErrStart := time.Now()
-					rcvErrOut, err := PerfqueryExec(device.GUID, deviceCounter.PortSelect, []string{"-E"}, ctxRcvErr)
-					metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
-					if err == context.DeadlineExceeded {
-						metric.rcvErrTimeout = 1
-						level.Error(s.logger).Log("msg", "Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
-						timeouts++
-						continue
-					} else if err != nil {
-						metric.rcvErrError = 1
-						level.Error(s.logger).Log("msg", "Error collecting rcvErr perfquery counters", "guid", device.GUID)
-						errors++
-						continue
-					}
-					rcvErrCounters, errs := perfqueryParse(device, rcvErrOut, s.logger)
-					errors = errors + errs
-					countersLock.Lock()
-					counters = append(counters, rcvErrCounters...)
-					countersLock.Unlock()
+					// Wrap each perfquery call in its own scope so the
+					// timeout context is cancelled at the end of the
+					// iteration, not accumulated until the goroutine
+					// returns.
+					func() {
+						ctxRcvErr, cancelRcvErr := context.WithTimeout(context.Background(), *perfqueryTimeout)
+						defer cancelRcvErr()
+						rcvErrStart := time.Now()
+						rcvErrOut, err := PerfqueryExec(device.GUID, deviceCounter.PortSelect, []string{"-E"}, ctxRcvErr)
+						metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
+						if err == context.DeadlineExceeded {
+							metric.rcvErrTimeout = 1
+							level.Error(s.logger).Log("msg", "Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
+							atomic.AddUint64(&timeouts, 1)
+							return
+						} else if err != nil {
+							metric.rcvErrError = 1
+							level.Error(s.logger).Log("msg", "Error collecting rcvErr perfquery counters", "guid", device.GUID, "err", err)
+							atomic.AddUint64(&errors, 1)
+							return
+						}
+						rcvErrCounters, errs := perfqueryParse(device, rcvErrOut, s.logger)
+						atomic.AddUint64(&errors, uint64(errs))
+						countersLock.Lock()
+						counters = append(counters, rcvErrCounters...)
+						countersLock.Unlock()
+					}()
 				}
 			}
 			countersLock.Lock()
@@ -401,5 +411,5 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 	}
 	wg.Wait()
 	close(limit)
-	return counters, metrics, errors, timeouts
+	return counters, metrics, float64(errors), float64(timeouts)
 }

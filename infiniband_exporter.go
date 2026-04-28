@@ -35,14 +35,19 @@ import (
 )
 
 const (
-	metricsEndpoint = "/metrics"
+	metricsEndpoint         = "/metrics"
+	internalMetricsEndpoint = "/internal/metrics"
 )
 
 var (
-	runOnce                = kingpin.Flag("exporter.runonce", "Run exporter once and write metrics to file").Default("false").Bool()
-	output                 = kingpin.Flag("exporter.output", "Output file to write metrics to when using runonce").Default("").String()
-	lockFile               = kingpin.Flag("exporter.lockfile", "Lock file path").Default("/tmp/infiniband_exporter.lock").String()
-	disableExporterMetrics = kingpin.Flag("web.disable-exporter-metrics", "Exclude metrics about the exporter (promhttp_*, process_*, go_*)").Default("false").Bool()
+	runOnce  = kingpin.Flag("exporter.runonce", "Run exporter once and write metrics to file").Default("false").Bool()
+	output   = kingpin.Flag("exporter.output", "Output file to write metrics to when using runonce").Default("").String()
+	lockFile = kingpin.Flag("exporter.lockfile", "Lock file path").Default("/tmp/infiniband_exporter.lock").String()
+	// /metrics serves only InfiniBand metrics. The Go runtime / process /
+	// promhttp self-metrics are exposed on a separate endpoint
+	// (/internal/metrics) so users can scrape the exporter's own health
+	// at a different cadence — or skip it entirely.
+	disableExporterMetrics = kingpin.Flag("web.disable-exporter-metrics", "Disable the "+internalMetricsEndpoint+" endpoint (Go runtime, process, promhttp)").Default("false").Bool()
 	toolkitFlags           = webflag.AddFlags(kingpin.CommandLine, ":9315")
 )
 
@@ -69,12 +74,7 @@ func setupGathers(runonce bool, logger log.Logger) prometheus.Gatherer {
 		}
 	}
 
-	gatherers := prometheus.Gatherers{registry}
-
-	if !*disableExporterMetrics && !*runOnce {
-		gatherers = append(gatherers, prometheus.DefaultGatherer)
-	}
-	return gatherers
+	return prometheus.Gatherers{registry}
 }
 
 func metricsHandler(logger log.Logger) http.HandlerFunc {
@@ -93,7 +93,9 @@ func writeMetrics(logger log.Logger) error {
 		level.Error(logger).Log("msg", "Unable to create temporary file", "err", err)
 		return err
 	}
-	defer os.Remove(tmp.Name())
+	// Best-effort cleanup; if Rename succeeded the file is already gone
+	// and Remove will return ENOENT, which we deliberately ignore.
+	defer func() { _ = os.Remove(tmp.Name()) }()
 	gatherers := setupGathers(true, logger)
 	err = prometheus.WriteToTextfile(tmp.Name(), gatherers)
 	if err != nil {
@@ -132,16 +134,24 @@ func run(logger log.Logger) error {
 	level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		//nolint:errcheck
-		w.Write([]byte(`<html>
+		body := `<html>
              <head><title>InfiniBand Exporter</title></head>
              <body>
              <h1>InfiniBand Exporter</h1>
-             <p><a href='` + metricsEndpoint + `'>Metrics</a></p>
-             </body>
-             </html>`))
+             <p><a href='` + metricsEndpoint + `'>InfiniBand metrics</a></p>`
+		if !*disableExporterMetrics {
+			body += `<p><a href='` + internalMetricsEndpoint + `'>Exporter internal metrics (Go runtime, process, promhttp)</a></p>`
+		}
+		body += `</body></html>`
+		//nolint:errcheck
+		w.Write([]byte(body))
 	})
 	http.Handle(metricsEndpoint, metricsHandler(logger))
+	if !*disableExporterMetrics {
+		// Default registry already has go_*, process_* and promhttp_*
+		// collectors registered by client_golang's init.
+		http.Handle(internalMetricsEndpoint, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	}
 	srv := &http.Server{}
 	if err := web.ListenAndServe(srv, toolkitFlags, logger); err != nil {
 		level.Error(logger).Log("msg", "Error starting HTTP server", "err", err)

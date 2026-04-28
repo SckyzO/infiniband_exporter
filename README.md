@@ -11,6 +11,15 @@ By default this exporter will collect counters from all switch ports on the fabr
 The InfiniBand diagnostic tools of `ibnetdiscover` and `perfquery` must also be present on the host running this exporter.
 These are commonly installed via the `infiniband-diags` package.
 
+## Endpoints
+
+| Path | Content |
+| --- | --- |
+| `/metrics` | InfiniBand metrics only — `infiniband_*` |
+| `/internal/metrics` | Exporter self-metrics — Go runtime, process, promhttp |
+
+The internal endpoint is intended for a separate, lower-frequency Prometheus scrape job dedicated to exporter health. Disable it with `--web.disable-exporter-metrics` if you do not want it exposed at all.
+
 ## Usage
 
 Collectors are enabled or disabled via `--collector.<name>` and `--no-collector.<name>` flags.

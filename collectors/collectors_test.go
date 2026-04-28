@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -119,4 +120,18 @@ func setupGatherer(collector prometheus.Collector) prometheus.Gatherer {
 	registry.MustRegister(collector)
 	gatherers := prometheus.Gatherers{registry}
 	return gatherers
+}
+
+// TestCollectorsCoexist exercises a real-world configuration where every
+// collector is wired into the same registry. Before v0.13.0 the
+// IbswinfoCollector and the SwitchCollector both registered metrics
+// named infiniband_switch_collect_{duration_seconds,error,timeout} with
+// different label sets, which client_golang rejects at MustRegister
+// time. Renaming the ibswinfo metrics to the dedicated `ibswinfo`
+// subsystem fixes this; this test prevents the regression.
+func TestCollectorsCoexist(t *testing.T) {
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(NewSwitchCollector(&switchDevices, false, log.NewNopLogger()))
+	registry.MustRegister(NewIbswinfoCollector(&switchDevices, false, log.NewNopLogger()))
+	registry.MustRegister(NewHCACollector(&switchDevices, false, log.NewNopLogger()))
 }

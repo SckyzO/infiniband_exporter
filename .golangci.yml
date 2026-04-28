@@ -9,20 +9,34 @@ linters:
   # gosec, revive) is intentionally deferred until 0.13+ once the legacy
   # debt has been addressed.
   default: standard
-  # Baseline only. errcheck is deferred to v0.13.0 (Lot 2 — bugs) where
-  # ignored returns will be audited deliberately. The wider quality set
-  # (gocritic, prealloc, unparam, gosec, revive) lands once the existing
-  # debt has been cleaned up.
-  disable:
-    - errcheck
+  # errcheck is enabled from v0.13.0 onward. Wider quality set
+  # (gocritic, prealloc, unparam, gosec, revive) lands progressively
+  # in 0.14+ once the legacy debt has been cleaned up.
   enable:
     - misspell
     - unconvert
   settings:
+    errcheck:
+      exclude-functions:
+        # http.ResponseWriter.Write: cannot recover meaningfully if the
+        # client disconnects mid-write; logging would be noise.
+        - (net/http.ResponseWriter).Write
+        # bytes.Buffer.Write{,String} only fail on out-of-memory, which
+        # the runtime panics on anyway — the documented Buffer contract
+        # is "always returns nil error".
+        - (*bytes.Buffer).Write
+        - (*bytes.Buffer).WriteString
+        # go-kit log: errors here are non-actionable (we are already
+        # logging an error) and would create infinite loops if we tried
+        # to log the log error.
+        - (github.com/go-kit/log.Logger).Log
+        # The cancel function returned by context.WithTimeout never
+        # surfaces an error; calling it discards a no-op return.
+        - cancel
     staticcheck:
       # QF* (quickfix), ST1000 (package comments), ST1003 (Go naming),
       # ST1005 (lower-cased error strings) are stylistic — tracked for
-      # 0.13.0+. They do not represent latent defects.
+      # 0.14+. They do not represent latent defects.
       checks:
         - all
         - -QF1003

@@ -16,6 +16,7 @@ package collectors
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -150,13 +151,16 @@ func perfqueryArgs(guid string, port string, extraArgs []string) (string, []stri
 func perfquery(guid string, port string, extraArgs []string, ctx context.Context) (string, error) {
 	command, args := perfqueryArgs(guid, port, extraArgs)
 	cmd := execCommand(ctx, command, args...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if ctx.Err() == context.DeadlineExceeded {
 		return "", ctx.Err()
 	} else if err != nil {
-		return "", err
+		// Surface stderr — perfquery routinely reports timeouts and IB
+		// fabric errors there, not on the exit code alone.
+		return "", fmt.Errorf("%w: %s", err, strings.TrimSpace(stderr.String()))
 	}
-	return out.String(), nil
+	return stdout.String(), nil
 }

@@ -94,11 +94,17 @@ func NewIbswinfoCollector(devices *[]InfinibandDevice, runonce bool, logger log.
 		devices:   devices,
 		logger:    log.With(logger, "collector", collector),
 		collector: collector,
-		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_duration_seconds"),
+		// Distinct subsystem ("ibswinfo" vs "switch") so the metric
+		// fqname does not collide with the SwitchCollector's
+		// infiniband_switch_collect_* metrics. Before this change the
+		// two collectors registered the same metric name with different
+		// label sets, which is invalid in client_golang and would fail
+		// MustRegister when both were enabled together.
+		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_duration_seconds"),
 			"Duration of collection", []string{"guid", "collector", "switch"}, nil),
-		Error: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_error"),
+		Error: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_error"),
 			"Indicates if collect error", []string{"guid", "collector", "switch"}, nil),
-		Timeout: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_timeout"),
+		Timeout: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_timeout"),
 			"Indicates if collect timeout", []string{"guid", "collector", "switch"}, nil),
 		HardwareInfo: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "hardware_info"),
 			"Infiniband switch hardware info", []string{"guid", "firmware_version", "psid", "part_number", "serial_number", "switch"}, nil),
@@ -122,11 +128,9 @@ func NewIbswinfoCollector(devices *[]InfinibandDevice, runonce bool, logger log.
 }
 
 func (s *IbswinfoCollector) Describe(ch chan<- *prometheus.Desc) {
-	// Do not describe as will conflict with switch but label set is unique
-	// So collect will work
-	// ch <- s.Duration
-	// ch <- s.Error
-	// ch <- s.Timeout
+	ch <- s.Duration
+	ch <- s.Error
+	ch <- s.Timeout
 	ch <- s.HardwareInfo
 	ch <- s.Uptime
 	ch <- s.PowerSupplyStatus

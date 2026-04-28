@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
 	"github.com/go-kit/log"
@@ -501,7 +502,19 @@ func TestBaseURL(t *testing.T) {
 }
 
 func queryExporter(path string) (string, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%s%s", address, path))
+	// run() is started in a goroutine by TestCollect with no readiness
+	// signal, so the HTTP server may not be bound yet on the first call.
+	// Retry briefly to absorb that race.
+	var resp *http.Response
+	var err error
+	url := fmt.Sprintf("http://%s%s", address, path)
+	for i := 0; i < 20; i++ {
+		resp, err = http.Get(url)
+		if err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 	if err != nil {
 		return "", err
 	}
