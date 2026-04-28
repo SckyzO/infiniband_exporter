@@ -115,3 +115,22 @@ ci-lint:
 .PHONY: clean
 clean:
 	rm -rf $(BIN) coverage.txt dist/ .build/
+
+# Smoke test: build, then exercise --help / --version / a brief HTTP
+# binding without any IB collector enabled (no ibnetdiscover required).
+# Catches binary-level regressions that the unit suite cannot see.
+SMOKE_PORT ?= 19316
+.PHONY: smoke
+smoke: build
+	@echo "=== --version ==="
+	@./$(BIN) --version
+	@echo "=== --help (truncated) ==="
+	@./$(BIN) --help 2>&1 | head -5
+	@echo "=== HTTP bind on :$(SMOKE_PORT) ==="
+	@./$(BIN) --no-collector.switch --no-collector.hca --web.listen-address=:$(SMOKE_PORT) >/tmp/smoke.log 2>&1 & \
+		pid=$$!; \
+		sleep 1; \
+		curl -fsS "http://localhost:$(SMOKE_PORT)/" >/dev/null && echo "  / OK"; \
+		curl -fsS "http://localhost:$(SMOKE_PORT)/internal/metrics" | head -1; \
+		kill $$pid 2>/dev/null; wait $$pid 2>/dev/null; true
+	@echo "✓ smoke test passed"
