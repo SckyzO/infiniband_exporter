@@ -73,6 +73,45 @@ release-snapshot:
 		-w /src \
 		$(RELEASE_IMAGE) release --snapshot --clean
 
+.PHONY: release-check
+release-check:
+	$(DOCKER) run --rm \
+		-v "$(CURDIR)":/src \
+		-w /src \
+		$(RELEASE_IMAGE) check
+
+# Local validation of the GitHub Actions workflow via `act`.
+# If `act` is on PATH it is used directly; otherwise we fall back to the
+# `nektosact/act` container image. Either way, the heavy lifting happens
+# inside containers — no Go toolchain runs on the host.
+ACT_IMAGE   ?= nektosact/act:latest
+ACT_LOCAL   := $(shell command -v act 2>/dev/null)
+
+# Container fallback: mount the Docker socket so `act` can orchestrate its
+# own job containers via the host daemon (Docker-out-of-Docker). Without
+# this, `act` cannot launch the runner image.
+ACT_CONTAINER = $(DOCKER) run --rm \
+	-v /var/run/docker.sock:/var/run/docker.sock \
+	-v "$(CURDIR)":/src \
+	-w /src \
+	$(ACT_IMAGE)
+
+ifdef ACT_LOCAL
+ACT := act
+else
+ACT := $(ACT_CONTAINER)
+endif
+
+.PHONY: ci-test
+ci-test:
+	@if [ -z "$(ACT_LOCAL)" ]; then echo "act not found locally, using $(ACT_IMAGE)"; fi
+	$(ACT) -W .github/workflows/test.yml --container-architecture linux/amd64 -j test
+
+.PHONY: ci-lint
+ci-lint:
+	@if [ -z "$(ACT_LOCAL)" ]; then echo "act not found locally, using $(ACT_IMAGE)"; fi
+	$(ACT) -W .github/workflows/test.yml --container-architecture linux/amd64 -j lint
+
 .PHONY: clean
 clean:
 	rm -rf $(BIN) coverage.txt dist/ .build/

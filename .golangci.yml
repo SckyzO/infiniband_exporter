@@ -1,0 +1,50 @@
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.26"
+
+linters:
+  # Baseline set for v0.12.0. The wider set (gocritic, prealloc, unparam,
+  # gosec, revive) is intentionally deferred until 0.13+ once the legacy
+  # debt has been addressed.
+  default: standard
+  # Baseline only. errcheck is deferred to v0.13.0 (Lot 2 — bugs) where
+  # ignored returns will be audited deliberately. The wider quality set
+  # (gocritic, prealloc, unparam, gosec, revive) lands once the existing
+  # debt has been cleaned up.
+  disable:
+    - errcheck
+  enable:
+    - misspell
+    - unconvert
+  settings:
+    staticcheck:
+      # QF* (quickfix), ST1000 (package comments), ST1003 (Go naming),
+      # ST1005 (lower-cased error strings) are stylistic — tracked for
+      # 0.13.0+. They do not represent latent defects.
+      checks:
+        - all
+        - -QF1003
+        - -ST1000
+        - -ST1003
+        - -ST1005
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/SckyzO/infiniband_exporter
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

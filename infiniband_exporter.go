@@ -19,7 +19,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/SckyzO/infiniband_exporter/collectors"
 	kingpin "github.com/alecthomas/kingpin/v2"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -31,6 +30,8 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
+
+	"github.com/SckyzO/infiniband_exporter/collectors"
 )
 
 const (

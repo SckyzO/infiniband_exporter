@@ -1,0 +1,82 @@
+version: 2
+
+project_name: infiniband_exporter
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: infiniband_exporter
+    main: .
+    binary: infiniband_exporter
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/prometheus/common/version.Version={{ .Version }}
+      - -X github.com/prometheus/common/version.Revision={{ .Commit }}
+      - -X github.com/prometheus/common/version.Branch={{ .Branch }}
+      - -X github.com/prometheus/common/version.BuildUser=goreleaser
+      - -X github.com/prometheus/common/version.BuildDate={{ .Date }}
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+      - ppc64le
+      - s390x
+
+archives:
+  - id: infiniband_exporter
+    formats:
+      - tar.gz
+    name_template: '{{ .ProjectName }}-{{ .Version }}.{{ .Os }}-{{ .Arch }}'
+    files:
+      - LICENSE
+      - CHANGELOG.md
+      - README.md
+
+checksum:
+  name_template: '{{ .ProjectName }}-{{ .Version }}.checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  version_template: '{{ .Version }}-snapshot-{{ .ShortCommit }}'
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - 'Merge pull request'
+      - 'Merge branch'
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Performance
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Refactor
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: Other
+      order: 999
+
+release:
+  github:
+    owner: SckyzO
+    name: infiniband_exporter
+  draft: false
+  prerelease: auto
+  mode: append

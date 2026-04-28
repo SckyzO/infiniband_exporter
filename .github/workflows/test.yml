@@ -1,0 +1,64 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: build / vet / test (race)
+    runs-on: ubuntu-latest
+    container:
+      image: golang:1.26.2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mark workspace as a safe git directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: gofmt
+        run: |
+          out=$(gofmt -l $(find . -type f -name '*.go' -not -path './.build/*'))
+          if [ -n "$out" ]; then
+            echo "::error::gofmt needed on the following files:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test -race
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: go build
+        run: go build -trimpath -buildvcs=false -o infiniband_exporter .
+
+      - name: Upload coverage
+        if: ${{ !env.ACT }}  # actions/upload-artifact requires Node, not in golang:1.26.2 container; skip under act
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage.txt
+          retention-days: 14
+
+  lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    container:
+      image: golangci/golangci-lint:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mark workspace as a safe git directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: golangci-lint
+        run: golangci-lint run --timeout=5m ./...

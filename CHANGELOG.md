@@ -1,3 +1,18 @@
+## 0.12.0 / 2026-04-28
+
+GitHub Actions CI/CD, GoReleaser, lint baseline.
+
+* `.github/workflows/test.yml` runs gofmt, `go vet`, `go test -race`, and `go build` inside the `golang:1.26.2` container, plus a separate `golangci-lint` job using the `golangci/golangci-lint:latest` container image.
+* `.github/workflows/release.yml` triggers on tags matching `v*.*.*` and produces multi-arch (amd64/arm64/ppc64le/s390x) Linux tarballs with SHA-256 checksums via GoReleaser. Releases publish automatically on tag push.
+* `.goreleaser.yaml` configures the build/archive/release pipeline. Conventional-commit prefixes (`feat:`, `fix:`, `perf:`, `refactor:`) are grouped in the auto-generated changelog.
+* `.golangci.yml` (v2 schema) enables a deliberately conservative baseline (`govet`, `ineffassign`, `staticcheck`, `unconvert`, `unused`, `misspell`). `errcheck` is deferred to the next release where ignored returns will be audited; stylistic checks (`ST1000`/`ST1003`/`ST1005`/`QF1003`) and the wider quality set (`gocritic`, `prealloc`, `unparam`, `gosec`, `revive`) are tracked for follow-up releases.
+* `.github/dependabot.yml` opens weekly grouped PRs for `gomod` (Prometheus stack and `golang.org/x` clustered) and `github-actions`.
+* New `Makefile` targets: `lint`, `release-snapshot`, `release-check`, `ci-test`, `ci-lint`. The `ci-*` targets run the GitHub workflow locally via `act`, falling back to the `nektosact/act` container if `act` is not on `$PATH`.
+* Auto-fixes applied by goimports / `golangci-lint --fix`:
+  - `math.Pow(1000, 3)` → `1000*1000*1000` in `parseRate`
+  - `strings.Replace(..., -1)` → `strings.ReplaceAll(...)` in `perfqueryParse`
+  - import grouping with `github.com/SckyzO/...` as local prefix
+
 ## 0.11.0 / 2026-04-28
 
 Independent fork — repository now lives at `github.com/SckyzO/infiniband_exporter`.

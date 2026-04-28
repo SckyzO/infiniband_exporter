@@ -93,7 +93,7 @@ func perfqueryParse(device InfinibandDevice, out string, logger log.Logger) ([]P
 			continue
 		}
 		var counter PerfQueryCounters
-		value := strings.Replace(items[1], ".", "", -1)
+		value := strings.ReplaceAll(items[1], ".", "")
 		if items[0] == "PortSelect" {
 			port = value
 		}

@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -224,7 +223,7 @@ func parseRate(width string, rateStr string) (float64, float64, error) {
 	}
 	widthMultipler, _ := strconv.ParseFloat(widthMatch[0], 64)
 	if laneRate, ok := laneRates[rateStr]; ok {
-		baseRate := widthMultipler * math.Pow(1000, 3) / 8
+		baseRate := widthMultipler * float64(1000*1000*1000) / 8
 		rawRate := laneRate[0] * baseRate
 		effectiveRate := laneRate[1] * baseRate
 		return rawRate, effectiveRate, nil
