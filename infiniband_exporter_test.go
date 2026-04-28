@@ -377,7 +377,7 @@ func TestMain(m *testing.M) {
 		}
 		return out, nil
 	}
-	collectors.IbswinfoExec = func(lid string, ctx context.Context) (string, error) {
+	collectors.IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		if lid == "1719" {
 			out, err := collectors.ReadFixture("ibswinfo", "test1")
 			return out, err

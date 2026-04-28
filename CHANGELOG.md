@@ -1,3 +1,22 @@
+## 0.15.0 / 2026-04-29
+
+ibswinfo: parallelism + static-fields cache.
+
+### Changed
+
+* `--ibswinfo.max-concurrent` default raised from `1` to `4`. On a 23-switch HDR400 fabric, sequential scrape was ~32 s (≈1.4 s per call); 4 concurrent callers cut that to ~8 s without saturating the SMA on the switches. Override via `--ibswinfo.max-concurrent=N` if your fabric has different characteristics.
+
+### Added
+
+* `--ibswinfo.static-cache-ttl` (default `15m`). Caches the rarely-changing fields (`PartNumber`, `SerialNumber`, `PSID`, `FirmwareVersion`) per GUID. While the entry is fresh, the collector calls `ibswinfo -d lid-X -o vitals` instead of the full output — reads only the dynamic registers (`MGIR`/`MGPIR`/`MSPS`/`MTMP`/`MFCR`), much faster. Cached static fields are merged back into the emitted `infiniband_switch_hardware_info` metric so it stays available across scrapes.
+* Set `--ibswinfo.static-cache-ttl=0` to disable the cache and reproduce pre-v0.15.0 behaviour exactly (every scrape is a full call).
+* New parser `parseIbswinfoVitals` for the `-o vitals` output format (separator `:`, key set `uptime (sec)` / `psu<N>.power (W)` / `cur.temp (C)` / `fan#<N>.speed (rpm)`). The pre-existing `parse_ibswinfo` handles the full output.
+
+### Caveats
+
+* Status fields (`infiniband_switch_power_supply_status_info`, `infiniband_switch_power_supply_dc_power_status_info`, `infiniband_switch_power_supply_fan_status_info`, `infiniband_switch_fan_status_info`) are emitted **only on full scrapes** — they are absent from the `vitals` output and not stored in the cache (a status that changes mid-cycle should not be hidden by a 15 min cache). Between full scrapes these series go stale in Prometheus. To alert on PSU/fan failure with sub-15 min latency, lower `--ibswinfo.static-cache-ttl` or set it to `0`.
+* The existing five `TestIbswinfoCollector*` tests now run with `--ibswinfo.static-cache-ttl=0` to keep their assertions stable. New tests (`TestParseIbswinfoVitals`, `TestIbswinfoCollectorCacheMissFull`, `TestIbswinfoCollectorCacheHitVitals`, `TestIbswinfoCollectorCacheExpired`, `TestIbswinfoCollectorCacheDisabled`) cover the cache paths.
+
 ## 0.14.0 / 2026-04-29
 
 Modernization: Go 1.26, slog, dependency bumps, alignment with sibling

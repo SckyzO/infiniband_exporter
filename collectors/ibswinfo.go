@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"log/slog"
@@ -31,17 +32,42 @@ import (
 )
 
 var (
-	CollectIbswinfo       = kingpin.Flag("collector.ibswinfo", "Enable ibswinfo data collection (BETA)").Default("false").Bool()
-	ibswinfoPath          = kingpin.Flag("ibswinfo.path", "Path to ibswinfo").Default("ibswinfo").String()
-	ibswinfoTimeout       = kingpin.Flag("ibswinfo.timeout", "Timeout for ibswinfo execution").Default("10s").Duration()
-	ibswinfoMaxConcurrent = kingpin.Flag("ibswinfo.max-concurrent", "Max number of concurrent ibswinfo executions").Default("1").Int()
-	IbswinfoExec          = ibswinfo
+	CollectIbswinfo = kingpin.Flag("collector.ibswinfo", "Enable ibswinfo data collection (BETA)").Default("false").Bool()
+	ibswinfoPath    = kingpin.Flag("ibswinfo.path", "Path to ibswinfo").Default("ibswinfo").String()
+	ibswinfoTimeout = kingpin.Flag("ibswinfo.timeout", "Timeout for ibswinfo execution").Default("10s").Duration()
+	// Bumped from 1 to 4 in v0.15.0. On a 23-switch HDR400 fabric the
+	// sequential scrape was ~32 s (1.4 s per call); 4 in flight cuts that
+	// to ~8 s without saturating the SMA on the switches.
+	ibswinfoMaxConcurrent = kingpin.Flag("ibswinfo.max-concurrent", "Max number of concurrent ibswinfo executions").Default("4").Int()
+	// Cache of static fields (PartNumber, SerialNumber, PSID, FirmwareVersion)
+	// keyed by GUID. While the entry is fresh, the collector calls
+	// `ibswinfo -o vitals` (faster, only dynamic registers MGIR/MGPIR/MSPS/
+	// MTMP/MFCR) and merges the cached static values back. A TTL of 0
+	// disables the cache and always issues full `ibswinfo -d lid-X` calls
+	// — matches the pre-v0.15.0 behaviour exactly.
+	ibswinfoStaticCacheTTL                  = kingpin.Flag("ibswinfo.static-cache-ttl", "TTL for caching static ibswinfo fields. 0 disables the cache.").Default("15m").Duration()
+	IbswinfoExec           IbswinfoExecFunc = ibswinfo
 )
+
+// IbswinfoExecFunc lets tests substitute the underlying ibswinfo invocation.
+// vitals=true requests the lightweight `-o vitals` output mode.
+type IbswinfoExecFunc func(lid string, vitals bool, ctx context.Context) (string, error)
+
+// ibswinfoCacheEntry stores the fields that practically never change between
+// scrapes (hardware identifiers and firmware version).
+type ibswinfoCacheEntry struct {
+	PartNumber      string
+	SerialNumber    string
+	PSID            string
+	FirmwareVersion string
+	lastRefresh     time.Time
+}
 
 type IbswinfoCollector struct {
 	devices              *[]InfinibandDevice
 	logger               *slog.Logger
 	collector            string
+	staticCache          sync.Map // map[guid]ibswinfoCacheEntry
 	Duration             *prometheus.Desc
 	Error                *prometheus.Desc
 	Timeout              *prometheus.Desc
@@ -186,10 +212,29 @@ func (s *IbswinfoCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
+// useVitalsForGUID returns true when a fresh static-cache entry exists for
+// the device. It is the only place that reads --ibswinfo.static-cache-ttl;
+// a TTL of 0 means "always full".
+func (s *IbswinfoCollector) useVitalsForGUID(guid string) (ibswinfoCacheEntry, bool) {
+	ttl := *ibswinfoStaticCacheTTL
+	if ttl <= 0 {
+		return ibswinfoCacheEntry{}, false
+	}
+	v, ok := s.staticCache.Load(guid)
+	if !ok {
+		return ibswinfoCacheEntry{}, false
+	}
+	entry := v.(ibswinfoCacheEntry)
+	if time.Since(entry.lastRefresh) >= ttl {
+		return entry, false
+	}
+	return entry, true
+}
+
 func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 	var ibswinfos []Ibswinfo
 	var ibswinfosLock sync.Mutex
-	var errors, timeouts float64
+	var errors, timeouts uint64
 	limit := make(chan int, *ibswinfoMaxConcurrent)
 	wg := &sync.WaitGroup{}
 	s.logger.Debug("Collecting ibswinfo on devices", "count", len(*s.devices))
@@ -203,24 +248,46 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 			}()
 			ctxibswinfo, cancelibswinfo := context.WithTimeout(context.Background(), *ibswinfoTimeout)
 			defer cancelibswinfo()
-			s.logger.Debug("Run ibswinfo", "lid", device.LID)
+			cached, useVitals := s.useVitalsForGUID(device.GUID)
+			s.logger.Debug("Run ibswinfo", "lid", device.LID, "vitals", useVitals)
 			start := time.Now()
-			ibswinfoOut, ibswinfoErr := IbswinfoExec(device.LID, ctxibswinfo)
+			ibswinfoOut, ibswinfoErr := IbswinfoExec(device.LID, useVitals, ctxibswinfo)
 			ibswinfoData := Ibswinfo{duration: time.Since(start).Seconds()}
 			if ibswinfoErr == context.DeadlineExceeded {
 				ibswinfoData.timeout = 1
 				s.logger.Error("Timeout collecting ibswinfo data", "guid", device.GUID, "lid", device.LID)
-				timeouts++
+				atomic.AddUint64(&timeouts, 1)
 			} else if ibswinfoErr != nil {
 				ibswinfoData.error = 1
 				s.logger.Error("Error collecting ibswinfo data", "err", fmt.Sprintf("%s:%s", ibswinfoErr, ibswinfoOut), "guid", device.GUID, "lid", device.LID)
-				errors++
+				atomic.AddUint64(&errors, 1)
 			}
 			if ibswinfoErr == nil {
-				err := parse_ibswinfo(ibswinfoOut, &ibswinfoData, s.logger)
-				if err != nil {
-					s.logger.Error("Error parsing ibswinfo output", "guid", device.GUID, "lid", device.LID)
-					errors++
+				var parseErr error
+				if useVitals {
+					parseErr = parseIbswinfoVitals(ibswinfoOut, &ibswinfoData, s.logger)
+					if parseErr == nil {
+						// Merge the static fields we kept off the wire.
+						ibswinfoData.PartNumber = cached.PartNumber
+						ibswinfoData.SerialNumber = cached.SerialNumber
+						ibswinfoData.PSID = cached.PSID
+						ibswinfoData.FirmwareVersion = cached.FirmwareVersion
+					}
+				} else {
+					parseErr = parse_ibswinfo(ibswinfoOut, &ibswinfoData, s.logger)
+					if parseErr == nil && *ibswinfoStaticCacheTTL > 0 {
+						s.staticCache.Store(device.GUID, ibswinfoCacheEntry{
+							PartNumber:      ibswinfoData.PartNumber,
+							SerialNumber:    ibswinfoData.SerialNumber,
+							PSID:            ibswinfoData.PSID,
+							FirmwareVersion: ibswinfoData.FirmwareVersion,
+							lastRefresh:     time.Now(),
+						})
+					}
+				}
+				if parseErr != nil {
+					s.logger.Error("Error parsing ibswinfo output", "guid", device.GUID, "lid", device.LID, "vitals", useVitals)
+					atomic.AddUint64(&errors, 1)
 				} else {
 					ibswinfoData.device = device
 					ibswinfosLock.Lock()
@@ -232,10 +299,10 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 	}
 	wg.Wait()
 	close(limit)
-	return ibswinfos, errors, timeouts
+	return ibswinfos, float64(errors), float64(timeouts)
 }
 
-func ibswinfoArgs(lid string) (string, []string) {
+func ibswinfoArgs(lid string, vitals bool) (string, []string) {
 	var command string
 	var args []string
 	if *useSudo {
@@ -244,12 +311,19 @@ func ibswinfoArgs(lid string) (string, []string) {
 	} else {
 		command = *ibswinfoPath
 	}
-	args = append(args, []string{"-d", fmt.Sprintf("lid-%s", lid)}...)
+	args = append(args, "-d", fmt.Sprintf("lid-%s", lid))
+	if vitals {
+		// `-o vitals` skips the static MFT registers (MSGI/MSCI/SPZR)
+		// and only reads MGIR/MGPIR/MSPS/MTMP/MTCAP/MFCR — significantly
+		// faster on every scrape, but the output format and key set are
+		// different (parse_ibswinfo_vitals handles it).
+		args = append(args, "-o", "vitals")
+	}
 	return command, args
 }
 
-func ibswinfo(lid string, ctx context.Context) (string, error) {
-	command, args := ibswinfoArgs(lid)
+func ibswinfo(lid string, vitals bool, ctx context.Context) (string, error) {
+	command, args := ibswinfoArgs(lid, vitals)
 	cmd := execCommand(ctx, command, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -388,6 +462,86 @@ func parse_ibswinfo(out string, data *Ibswinfo, logger *slog.Logger) error {
 		powerSupplies = append(powerSupplies, psu)
 	}
 	data.PowerSupplies = powerSupplies
+	data.Fans = fans
+	return nil
+}
+
+// parseIbswinfoVitals parses the output of `ibswinfo -d lid-X -o vitals`.
+// The format differs from the default one: lines use ":" as separator, the
+// keys are different (e.g. "uptime (sec)" instead of "uptime (d-h:m:s)"),
+// and only dynamic fields are present — no part number, serial, PSID,
+// firmware, or status flags. Static fields are merged from the cache by
+// the caller.
+//
+// Sample input:
+//
+//	uptime (sec)       : 16982312
+//	psu0.power (W)     : 92
+//	psu1.power (W)     : 102
+//	cur.temp (C)       : 73
+//	max.temp (C)       : 80
+//	fan#1.speed (rpm)  : 6355
+func parseIbswinfoVitals(out string, data *Ibswinfo, logger *slog.Logger) error {
+	data.Temp = math.NaN()
+	rePSU := regexp.MustCompile(`^psu([0-9]+)\.power \(W\)$`)
+	reFan := regexp.MustCompile(`^fan#([0-9]+)\.speed \(rpm\)$`)
+	psus := make(map[string]SwitchPowerSupply)
+	var fans []SwitchFan
+	for _, line := range strings.Split(out, "\n") {
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		switch key {
+		case "uptime (sec)":
+			sec, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				logger.Error("Unable to parse vitals uptime (sec)", "err", err, "value", value)
+				continue
+			}
+			data.Uptime = sec
+			continue
+		case "cur.temp (C)":
+			temp, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				logger.Error("Unable to parse vitals cur.temp (C)", "err", err, "value", value)
+				continue
+			}
+			data.Temp = temp
+			continue
+		}
+		if m := rePSU.FindStringSubmatch(key); len(m) == 2 {
+			psu := SwitchPowerSupply{ID: m[1], PowerW: math.NaN()}
+			if value != "" {
+				powerW, err := strconv.ParseFloat(value, 64)
+				if err != nil {
+					logger.Error("Unable to parse vitals psu power (W)", "err", err, "psu", m[1], "value", value)
+				} else {
+					psu.PowerW = powerW
+				}
+			}
+			psus[m[1]] = psu
+			continue
+		}
+		if m := reFan.FindStringSubmatch(key); len(m) == 2 {
+			fan := SwitchFan{ID: m[1], RPM: math.NaN()}
+			if value != "" {
+				rpm, err := strconv.ParseFloat(value, 64)
+				if err != nil {
+					logger.Error("Unable to parse vitals fan speed (rpm)", "err", err, "fan", m[1], "value", value)
+				} else {
+					fan.RPM = rpm
+				}
+			}
+			fans = append(fans, fan)
+		}
+	}
+	for id, psu := range psus {
+		psu.ID = id
+		data.PowerSupplies = append(data.PowerSupplies, psu)
+	}
 	data.Fans = fans
 	return nil
 }

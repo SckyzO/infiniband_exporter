@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -201,10 +202,10 @@ func TestParseIBSWInfoErrors(t *testing.T) {
 }
 
 func TestIbswinfoCollector(t *testing.T) {
-	if _, err := kingpin.CommandLine.Parse([]string{}); err != nil {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
-	IbswinfoExec = func(lid string, ctx context.Context) (string, error) {
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		if lid == "1719" {
 			out, err := ReadFixture("ibswinfo", "test1")
 			return out, err
@@ -300,10 +301,10 @@ func TestIbswinfoCollector(t *testing.T) {
 }
 
 func TestIbswinfoCollectorMissingStatus(t *testing.T) {
-	if _, err := kingpin.CommandLine.Parse([]string{}); err != nil {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
-	IbswinfoExec = func(lid string, ctx context.Context) (string, error) {
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		if lid == "1719" {
 			out, err := ReadFixture("ibswinfo", "test1-missing")
 			return out, err
@@ -324,10 +325,10 @@ func TestIbswinfoCollectorMissingStatus(t *testing.T) {
 }
 
 func TestIbswinfoCollectorError(t *testing.T) {
-	if _, err := kingpin.CommandLine.Parse([]string{}); err != nil {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
-	IbswinfoExec = func(lid string, ctx context.Context) (string, error) {
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		var out string
 		var err error
 		if lid == "1719" {
@@ -364,10 +365,10 @@ func TestIbswinfoCollectorError(t *testing.T) {
 }
 
 func TestIbswinfoCollectorErrorRunonce(t *testing.T) {
-	if _, err := kingpin.CommandLine.Parse([]string{}); err != nil {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
-	IbswinfoExec = func(lid string, ctx context.Context) (string, error) {
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		var out string
 		var err error
 		if lid == "1719" {
@@ -402,10 +403,10 @@ func TestIbswinfoCollectorErrorRunonce(t *testing.T) {
 }
 
 func TestIbswinfoCollectorTimeout(t *testing.T) {
-	if _, err := kingpin.CommandLine.Parse([]string{}); err != nil {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
-	IbswinfoExec = func(lid string, ctx context.Context) (string, error) {
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		return "", context.DeadlineExceeded
 	}
 	expected := `
@@ -431,12 +432,12 @@ func TestIbswinfoCollectorTimeout(t *testing.T) {
 }
 
 func TestIbswinfoArgs(t *testing.T) {
-	if _, err := kingpin.CommandLine.Parse([]string{}); err != nil {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
 	trueValue := true
 	falseValue := false
-	command, args := ibswinfoArgs("100")
+	command, args := ibswinfoArgs("100", false)
 	if command != "ibswinfo" {
 		t.Errorf("Unexpected command, got: %s", command)
 	}
@@ -445,7 +446,7 @@ func TestIbswinfoArgs(t *testing.T) {
 		t.Errorf("Unexpected args\nExpected\n%v\nGot\n%v", expectedArgs, args)
 	}
 	useSudo = &trueValue
-	command, args = ibswinfoArgs("100")
+	command, args = ibswinfoArgs("100", false)
 	if command != "sudo" {
 		t.Errorf("Unexpected command, got: %s", command)
 	}
@@ -463,7 +464,7 @@ func TestIBSWInfo(t *testing.T) {
 	defer func() { execCommand = exec.CommandContext }()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	out, err := ibswinfo("1", ctx)
+	out, err := ibswinfo("1", false, ctx)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err.Error())
 	}
@@ -479,7 +480,7 @@ func TestIBSWInfoError(t *testing.T) {
 	defer func() { execCommand = exec.CommandContext }()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	out, err := ibswinfo("1", ctx)
+	out, err := ibswinfo("1", false, ctx)
 	if err == nil {
 		t.Errorf("Expected error")
 	}
@@ -495,11 +496,182 @@ func TestIBSWInfoTimeout(t *testing.T) {
 	defer func() { execCommand = exec.CommandContext }()
 	ctx, cancel := context.WithTimeout(context.Background(), 0*time.Second)
 	defer cancel()
-	out, err := ibswinfo("1", ctx)
+	out, err := ibswinfo("1", false, ctx)
 	if err != context.DeadlineExceeded {
 		t.Errorf("Expected DeadlineExceeded")
 	}
 	if out != "" {
 		t.Errorf("Unexpected out: %s", out)
+	}
+}
+
+// TestParseIbswinfoVitals exercises the vitals-format parser against a
+// representative fixture (separator ":", different keys than the full
+// output). It does not exercise the cache merge path — that is covered
+// by TestIbswinfoCollectorCacheHit below.
+func TestParseIbswinfoVitals(t *testing.T) {
+	out, err := ReadFixture("ibswinfo", "vitals1")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	var data Ibswinfo
+	if err := parseIbswinfoVitals(out, &data, slog.New(slog.DiscardHandler)); err != nil {
+		t.Fatalf("Unexpected parse error: %s", err)
+	}
+	if data.Uptime != 16982312 {
+		t.Errorf("Unexpected uptime: %f", data.Uptime)
+	}
+	if data.Temp != 73 {
+		t.Errorf("Unexpected temp: %f", data.Temp)
+	}
+	if len(data.PowerSupplies) != 2 {
+		t.Errorf("Unexpected PSU count: %d", len(data.PowerSupplies))
+	}
+	if len(data.Fans) != 9 {
+		t.Errorf("Unexpected fan count: %d", len(data.Fans))
+	}
+	// Static fields must remain empty: the vitals format does not carry
+	// them; the collector merges them from the cache.
+	if data.PartNumber != "" || data.SerialNumber != "" || data.PSID != "" || data.FirmwareVersion != "" {
+		t.Errorf("Static fields should be empty in vitals parse, got: %+v", data)
+	}
+}
+
+// TestIbswinfoCollectorCacheMissFull verifies that the first scrape with a
+// non-zero TTL goes through the full path (vitals=false) — there is
+// nothing in the cache yet.
+func TestIbswinfoCollectorCacheMissFull(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=15m"}); err != nil {
+		t.Fatal(err)
+	}
+	var fullCalls, vitalsCalls atomic.Uint64
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
+		if vitals {
+			vitalsCalls.Add(1)
+		} else {
+			fullCalls.Add(1)
+		}
+		out, err := ReadFixture("ibswinfo", "test1")
+		return out, err
+	}
+	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
+	gatherers := setupGatherer(collector)
+	if _, err := testutil.GatherAndCount(gatherers); err != nil {
+		t.Fatal(err)
+	}
+	if got := fullCalls.Load(); got != uint64(len(switchDevices)) {
+		t.Errorf("Expected %d full calls on cold cache, got %d", len(switchDevices), got)
+	}
+	if got := vitalsCalls.Load(); got != 0 {
+		t.Errorf("Expected 0 vitals calls on cold cache, got %d", got)
+	}
+}
+
+// TestIbswinfoCollectorCacheHitVitals verifies the second scrape uses the
+// vitals path and that static fields are merged back from the cache.
+func TestIbswinfoCollectorCacheHitVitals(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=15m"}); err != nil {
+		t.Fatal(err)
+	}
+	var fullCalls, vitalsCalls atomic.Uint64
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
+		if vitals {
+			vitalsCalls.Add(1)
+			out, err := ReadFixture("ibswinfo", "vitals1")
+			return out, err
+		}
+		fullCalls.Add(1)
+		out, err := ReadFixture("ibswinfo", "test1")
+		return out, err
+	}
+	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
+	gatherers := setupGatherer(collector)
+	// Warm the cache.
+	if _, err := testutil.GatherAndCount(gatherers); err != nil {
+		t.Fatal(err)
+	}
+	// Second scrape should use vitals for every device.
+	if _, err := testutil.GatherAndCount(gatherers); err != nil {
+		t.Fatal(err)
+	}
+	if got := fullCalls.Load(); got != uint64(len(switchDevices)) {
+		t.Errorf("Expected %d full calls (cold cache), got %d", len(switchDevices), got)
+	}
+	if got := vitalsCalls.Load(); got != uint64(len(switchDevices)) {
+		t.Errorf("Expected %d vitals calls (warm cache), got %d", len(switchDevices), got)
+	}
+	// hardware_info should still be present after the vitals scrape (merged
+	// from the cache). One per device.
+	expected := `
+		# HELP infiniband_switch_hardware_info Infiniband switch hardware info
+		# TYPE infiniband_switch_hardware_info gauge
+		infiniband_switch_hardware_info{firmware_version="11.2008.2102",guid="0x506b4b03005c2740",part_number="MSB7790-ES2F",psid="MT_1880110032",serial_number="MT1943X00498",switch="iswr0l1"} 1
+		infiniband_switch_hardware_info{firmware_version="11.2008.2102",guid="0x7cfe9003009ce5b0",part_number="MSB7790-ES2F",psid="MT_1880110032",serial_number="MT1943X00498",switch="iswr1l1"} 1
+	`
+	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
+		"infiniband_switch_hardware_info"); err != nil {
+		t.Errorf("static fields not merged from cache after vitals scrape:\n%s", err)
+	}
+}
+
+// TestIbswinfoCollectorCacheExpired verifies that an expired entry forces
+// a full scrape again.
+func TestIbswinfoCollectorCacheExpired(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=10ms"}); err != nil {
+		t.Fatal(err)
+	}
+	var fullCalls atomic.Uint64
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
+		if !vitals {
+			fullCalls.Add(1)
+		}
+		out, err := ReadFixture("ibswinfo", "test1")
+		return out, err
+	}
+	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
+	gatherers := setupGatherer(collector)
+	if _, err := testutil.GatherAndCount(gatherers); err != nil {
+		t.Fatal(err)
+	}
+	// Wait past the TTL to force re-population.
+	time.Sleep(20 * time.Millisecond)
+	if _, err := testutil.GatherAndCount(gatherers); err != nil {
+		t.Fatal(err)
+	}
+	want := uint64(2 * len(switchDevices)) // two full passes
+	if got := fullCalls.Load(); got != want {
+		t.Errorf("Expected %d full calls after TTL expiry, got %d", want, got)
+	}
+}
+
+// TestIbswinfoCollectorCacheDisabled verifies TTL=0 reproduces pre-v0.15
+// behaviour: every scrape is a full call.
+func TestIbswinfoCollectorCacheDisabled(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
+		t.Fatal(err)
+	}
+	var fullCalls, vitalsCalls atomic.Uint64
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
+		if vitals {
+			vitalsCalls.Add(1)
+		} else {
+			fullCalls.Add(1)
+		}
+		out, err := ReadFixture("ibswinfo", "test1")
+		return out, err
+	}
+	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
+	gatherers := setupGatherer(collector)
+	for i := 0; i < 3; i++ {
+		if _, err := testutil.GatherAndCount(gatherers); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := vitalsCalls.Load(); got != 0 {
+		t.Errorf("Expected 0 vitals calls when TTL=0, got %d", got)
+	}
+	want := uint64(3 * len(switchDevices))
+	if got := fullCalls.Load(); got != want {
+		t.Errorf("Expected %d full calls when TTL=0, got %d", want, got)
 	}
 }
