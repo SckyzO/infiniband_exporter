@@ -17,8 +17,9 @@ import (
 	"strings"
 	"testing"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -167,7 +168,7 @@ func TestSwitchCollector(t *testing.T) {
 		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="10",switch="iswr1l1",uplink="o0001 HCA-1",uplink_guid="0x7cfe9003003b4bde",uplink_lid="134",uplink_port="1",uplink_type="CA"} 1
 		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="11",switch="iswr1l1",uplink="o0002 HCA-1",uplink_guid="0x7cfe9003003b4b96",uplink_lid="133",uplink_port="1",uplink_type="CA"} 1
 	`
-	collector := NewSwitchCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -368,7 +369,7 @@ func TestSwitchCollectorFull(t *testing.T) {
 		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="10",switch="iswr1l1",uplink="o0001 HCA-1",uplink_guid="0x7cfe9003003b4bde",uplink_lid="134",uplink_port="1",uplink_type="CA"} 1
 		infiniband_switch_uplink_info{guid="0x7cfe9003009ce5b0",port="11",switch="iswr1l1",uplink="o0002 HCA-1",uplink_guid="0x7cfe9003003b4b96",uplink_lid="133",uplink_port="1",uplink_type="CA"} 1
 	`
-	collector := NewSwitchCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -439,7 +440,7 @@ func TestSwitchCollectorNoBase(t *testing.T) {
 		infiniband_switch_port_vl_mapping_errors_total{guid="0x7cfe9003009ce5b0",port="1",switch="iswr1l1"} 0
 		infiniband_switch_port_vl_mapping_errors_total{guid="0x7cfe9003009ce5b0",port="2",switch="iswr1l1"} 0
 	`
-	collector := NewSwitchCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -480,7 +481,7 @@ func TestSwitchCollectorError(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="switch"} 0
 	`
-	collector := NewSwitchCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -508,7 +509,7 @@ func TestSwitchCollectorErrorRunonce(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="switch-runonce"} 0
 	`
-	collector := NewSwitchCollector(&switchDevices, true, log.NewNopLogger())
+	collector := NewSwitchCollector(&switchDevices, true, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -536,7 +537,7 @@ func TestSwitchCollectorTimeout(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="switch"} 2
 	`
-	collector := NewSwitchCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)

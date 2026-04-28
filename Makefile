@@ -131,6 +131,7 @@ smoke: build
 		pid=$$!; \
 		sleep 1; \
 		curl -fsS "http://localhost:$(SMOKE_PORT)/" >/dev/null && echo "  / OK"; \
-		curl -fsS "http://localhost:$(SMOKE_PORT)/internal/metrics" | head -1; \
+		curl -fsS "http://localhost:$(SMOKE_PORT)/healthz" | grep -q ok && echo "  /healthz OK"; \
+		curl -fsS "http://localhost:$(SMOKE_PORT)/metrics" | grep -E "^(go_build_info|infiniband_)" | head -2; \
 		kill $$pid 2>/dev/null; wait $$pid 2>/dev/null; true
 	@echo "✓ smoke test passed"

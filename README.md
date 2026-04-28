@@ -13,12 +13,12 @@ These are commonly installed via the `infiniband-diags` package.
 
 ## Endpoints
 
-| Path | Content |
+| Path | Purpose |
 | --- | --- |
-| `/metrics` | InfiniBand metrics only — `infiniband_*` |
-| `/internal/metrics` | Exporter self-metrics — Go runtime, process, promhttp |
+| `/metrics` | InfiniBand metrics + `go_*`, `process_*`, `promhttp_*` self-metrics. `go_build_info` is always present. |
+| `/healthz` | Returns `200 ok` if the HTTP server is up. Does not probe fabric reachability — pair with metric-based alerts for that. |
 
-The internal endpoint is intended for a separate, lower-frequency Prometheus scrape job dedicated to exporter health. Disable it with `--web.disable-exporter-metrics` if you do not want it exposed at all.
+Pass `--web.disable-exporter-metrics` to skip registering the Go runtime and process collectors. Filtering `go_*` / `process_*` / `promhttp_*` at scrape time is the responsibility of Prometheus (`metric_relabel_configs: drop`).
 
 ## Usage
 

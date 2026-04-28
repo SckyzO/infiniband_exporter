@@ -24,9 +24,9 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -40,7 +40,7 @@ var (
 
 type IbswinfoCollector struct {
 	devices              *[]InfinibandDevice
-	logger               log.Logger
+	logger               *slog.Logger
 	collector            string
 	Duration             *prometheus.Desc
 	Error                *prometheus.Desc
@@ -85,14 +85,14 @@ type SwitchFan struct {
 	RPM float64
 }
 
-func NewIbswinfoCollector(devices *[]InfinibandDevice, runonce bool, logger log.Logger) *IbswinfoCollector {
+func NewIbswinfoCollector(devices *[]InfinibandDevice, runonce bool, logger *slog.Logger) *IbswinfoCollector {
 	collector := "ibswinfo"
 	if runonce {
 		collector = "ibswinfo-runonce"
 	}
 	return &IbswinfoCollector{
 		devices:   devices,
-		logger:    log.With(logger, "collector", collector),
+		logger:    logger.With("collector", collector),
 		collector: collector,
 		// Distinct subsystem ("ibswinfo" vs "switch") so the metric
 		// fqname does not collide with the SwitchCollector's
@@ -192,7 +192,7 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 	var errors, timeouts float64
 	limit := make(chan int, *ibswinfoMaxConcurrent)
 	wg := &sync.WaitGroup{}
-	level.Debug(s.logger).Log("msg", "Collecting ibswinfo on devices", "count", len(*s.devices))
+	s.logger.Debug("Collecting ibswinfo on devices", "count", len(*s.devices))
 	for _, device := range *s.devices {
 		limit <- 1
 		wg.Add(1)
@@ -203,23 +203,23 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 			}()
 			ctxibswinfo, cancelibswinfo := context.WithTimeout(context.Background(), *ibswinfoTimeout)
 			defer cancelibswinfo()
-			level.Debug(s.logger).Log("msg", "Run ibswinfo", "lid", device.LID)
+			s.logger.Debug("Run ibswinfo", "lid", device.LID)
 			start := time.Now()
 			ibswinfoOut, ibswinfoErr := IbswinfoExec(device.LID, ctxibswinfo)
 			ibswinfoData := Ibswinfo{duration: time.Since(start).Seconds()}
 			if ibswinfoErr == context.DeadlineExceeded {
 				ibswinfoData.timeout = 1
-				level.Error(s.logger).Log("msg", "Timeout collecting ibswinfo data", "guid", device.GUID, "lid", device.LID)
+				s.logger.Error("Timeout collecting ibswinfo data", "guid", device.GUID, "lid", device.LID)
 				timeouts++
 			} else if ibswinfoErr != nil {
 				ibswinfoData.error = 1
-				level.Error(s.logger).Log("msg", "Error collecting ibswinfo data", "err", fmt.Sprintf("%s:%s", ibswinfoErr, ibswinfoOut), "guid", device.GUID, "lid", device.LID)
+				s.logger.Error("Error collecting ibswinfo data", "err", fmt.Sprintf("%s:%s", ibswinfoErr, ibswinfoOut), "guid", device.GUID, "lid", device.LID)
 				errors++
 			}
 			if ibswinfoErr == nil {
 				err := parse_ibswinfo(ibswinfoOut, &ibswinfoData, s.logger)
 				if err != nil {
-					level.Error(s.logger).Log("msg", "Error parsing ibswinfo output", "guid", device.GUID, "lid", device.LID)
+					s.logger.Error("Error parsing ibswinfo output", "guid", device.GUID, "lid", device.LID)
 					errors++
 				} else {
 					ibswinfoData.device = device
@@ -263,7 +263,7 @@ func ibswinfo(lid string, ctx context.Context) (string, error) {
 	return stdout.String(), nil
 }
 
-func parse_ibswinfo(out string, data *Ibswinfo, logger log.Logger) error {
+func parse_ibswinfo(out string, data *Ibswinfo, logger *slog.Logger) error {
 	data.Temp = math.NaN()
 	lines := strings.Split(out, "\n")
 	psus := make(map[string]SwitchPowerSupply)
@@ -303,7 +303,7 @@ func parse_ibswinfo(out string, data *Ibswinfo, logger log.Logger) error {
 				daysStr := strings.Replace(uptime_s1[0], "d", "", 1)
 				days, err = strconv.ParseFloat(daysStr, 64)
 				if err != nil {
-					level.Error(logger).Log("msg", "Unable to parse uptime duration", "err", err, "value", value)
+					logger.Error("Unable to parse uptime duration", "err", err, "value", value)
 					continue
 				}
 				uptimeHMS = uptime_s1[1]
@@ -312,7 +312,7 @@ func parse_ibswinfo(out string, data *Ibswinfo, logger log.Logger) error {
 			}
 			t1, err := time.Parse("15:04:05", uptimeHMS)
 			if err != nil {
-				level.Error(logger).Log("msg", "Unable to parse uptime duration", "err", err, "value", value)
+				logger.Error("Unable to parse uptime duration", "err", err, "value", value)
 				continue
 			}
 			t2, _ := time.Parse("15:04:05", "00:00:00")
@@ -341,7 +341,7 @@ func parse_ibswinfo(out string, data *Ibswinfo, logger log.Logger) error {
 			if err == nil {
 				psu.PowerW = powerW
 			} else {
-				level.Error(logger).Log("msg", "Unable to parse power (W)", "err", err, "value", value)
+				logger.Error("Unable to parse power (W)", "err", err, "value", value)
 				return err
 			}
 		}
@@ -353,7 +353,7 @@ func parse_ibswinfo(out string, data *Ibswinfo, logger log.Logger) error {
 			if err == nil {
 				data.Temp = temp
 			} else {
-				level.Error(logger).Log("msg", "Unable to parse temperature (C)", "err", err, "value", value)
+				logger.Error("Unable to parse temperature (C)", "err", err, "value", value)
 				return err
 			}
 		}
@@ -378,7 +378,7 @@ func parse_ibswinfo(out string, data *Ibswinfo, logger log.Logger) error {
 				}
 				fans = append(fans, fan)
 			} else {
-				level.Error(logger).Log("msg", "Unable to parse fan RPM", "err", err, "value", value)
+				logger.Error("Unable to parse fan RPM", "err", err, "value", value)
 				return err
 			}
 		}

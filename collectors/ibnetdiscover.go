@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -74,17 +74,17 @@ type IBNetDiscover struct {
 	timeoutMetric float64
 	errorMetric   float64
 	duration      float64
-	logger        log.Logger
+	logger        *slog.Logger
 	collector     string
 }
 
-func NewIBNetDiscover(runonce bool, logger log.Logger) *IBNetDiscover {
+func NewIBNetDiscover(runonce bool, logger *slog.Logger) *IBNetDiscover {
 	collector := "ibnetdiscover"
 	if runonce {
 		collector = "ibnetdiscover-runonce"
 	}
 	return &IBNetDiscover{
-		logger:    log.With(logger, "collector", collector),
+		logger:    logger.With("collector", collector),
 		collector: collector,
 	}
 }
@@ -94,10 +94,10 @@ func (ib *IBNetDiscover) GetPorts() (*[]InfinibandDevice, *[]InfinibandDevice, e
 	switches, hcas, err := ib.collect()
 	ib.duration = time.Since(collectTime).Seconds()
 	if err == context.DeadlineExceeded {
-		level.Error(ib.logger).Log("msg", "Timeout executing ibnetdiscover")
+		ib.logger.Error("Timeout executing ibnetdiscover")
 		ib.timeoutMetric = 1
 	} else if err != nil {
-		level.Error(ib.logger).Log("msg", "Error executing ibnetdiscover", "err", err)
+		ib.logger.Error("Error executing ibnetdiscover", "err", err)
 		ib.errorMetric = 1
 	}
 	return switches, hcas, err
@@ -126,18 +126,18 @@ func (ib *IBNetDiscover) collect() (*[]InfinibandDevice, *[]InfinibandDevice, er
 	return switches, hcas, err
 }
 
-func ibnetdiscoverParse(out string, logger log.Logger) (*[]InfinibandDevice, *[]InfinibandDevice, error) {
+func ibnetdiscoverParse(out string, logger *slog.Logger) (*[]InfinibandDevice, *[]InfinibandDevice, error) {
 	var switches, hcas []InfinibandDevice
 	devices := make(map[string]InfinibandDevice)
 	lines := strings.Split(out, "\n")
 	for _, line := range lines {
 		items := strings.Fields(line)
 		if len(items) < 5 {
-			level.Debug(logger).Log("msg", "Skipping line that is not connected", "line", line)
+			logger.Debug("Skipping line that is not connected", "line", line)
 			continue
 		}
 		if items[5] == "???" {
-			level.Debug(logger).Log("msg", "Skipping line that is not connected", "line", line)
+			logger.Debug("Skipping line that is not connected", "line", line)
 			continue
 		}
 		// check the last item, because name may have space so that it is split into multiple items
@@ -156,7 +156,7 @@ func ibnetdiscoverParse(out string, logger log.Logger) (*[]InfinibandDevice, *[]
 			items[len(items)-1] = name
 		}
 		if items[5] == "SDR" && len(items) == 7 {
-			level.Debug(logger).Log("msg", "Skipping split mode port", "line", line)
+			logger.Debug("Skipping split mode port", "line", line)
 			continue
 		}
 		guid := items[3]
@@ -173,12 +173,12 @@ func ibnetdiscoverParse(out string, logger log.Logger) (*[]InfinibandDevice, *[]
 		device.GUID = guid
 		rawRate, effectiveRate, err := parseRate(items[4], items[5])
 		if err != nil {
-			level.Error(logger).Log("msg", "Unable to parse speed", "width", items[4], "rate", items[5], "type", device.Type, "guid", device.GUID)
+			logger.Error("Unable to parse speed", "width", items[4], "rate", items[5], "type", device.Type, "guid", device.GUID)
 			return nil, nil, err
 		}
 		portName, uplinkName, err := parseNames(line)
 		if err != nil {
-			level.Error(logger).Log("msg", "Unable to parse names", "err", err, "type", device.Type, "guid", device.GUID, "line", line)
+			logger.Error("Unable to parse names", "err", err, "type", device.Type, "guid", device.GUID, "line", line)
 			return nil, nil, err
 		}
 		// Only associate rates with device if HCA since switch

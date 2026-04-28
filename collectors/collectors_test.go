@@ -22,7 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log"
+	"log/slog"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -131,7 +132,7 @@ func setupGatherer(collector prometheus.Collector) prometheus.Gatherer {
 // subsystem fixes this; this test prevents the regression.
 func TestCollectorsCoexist(t *testing.T) {
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(NewSwitchCollector(&switchDevices, false, log.NewNopLogger()))
-	registry.MustRegister(NewIbswinfoCollector(&switchDevices, false, log.NewNopLogger()))
-	registry.MustRegister(NewHCACollector(&switchDevices, false, log.NewNopLogger()))
+	registry.MustRegister(NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler)))
+	registry.MustRegister(NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler)))
+	registry.MustRegister(NewHCACollector(&switchDevices, false, slog.New(slog.DiscardHandler)))
 }

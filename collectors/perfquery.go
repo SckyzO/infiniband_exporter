@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 )
 
 var (
@@ -81,7 +81,7 @@ func initializeCounters(counters *PerfQueryCounters) {
 	}
 }
 
-func perfqueryParse(device InfinibandDevice, out string, logger log.Logger) ([]PerfQueryCounters, float64) {
+func perfqueryParse(device InfinibandDevice, out string, logger *slog.Logger) ([]PerfQueryCounters, float64) {
 	var counters []PerfQueryCounters
 	var port string
 	var errors float64
@@ -90,7 +90,7 @@ func perfqueryParse(device InfinibandDevice, out string, logger log.Logger) ([]P
 	for _, line := range lines {
 		items := strings.Split(line, ":")
 		if len(items) != 2 {
-			level.Debug(logger).Log("msg", "Line has wrong number of elements, skipping", "line", line)
+			logger.Debug("Line has wrong number of elements, skipping", "line", line)
 			continue
 		}
 		var counter PerfQueryCounters
@@ -108,7 +108,7 @@ func perfqueryParse(device InfinibandDevice, out string, logger log.Logger) ([]P
 		s := ps.Elem()
 		f := s.FieldByName(items[0])
 		if !f.IsValid() {
-			level.Debug(logger).Log("msg", "Field not part of counters", "field", items[0])
+			logger.Debug("Field not part of counters", "field", items[0])
 			continue
 		}
 		if f.Kind() == reflect.String {
@@ -116,7 +116,7 @@ func perfqueryParse(device InfinibandDevice, out string, logger log.Logger) ([]P
 		} else if f.Kind() == reflect.Float64 {
 			val, err := strconv.ParseFloat(value, 64)
 			if err != nil {
-				level.Error(logger).Log("msg", "Unable to parse counter value", "err", err)
+				logger.Error("Unable to parse counter value", "err", err)
 				errors++
 				continue
 			}

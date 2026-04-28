@@ -17,8 +17,9 @@ import (
 	"strings"
 	"testing"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -154,7 +155,7 @@ func TestHCACollector(t *testing.T) {
 		infiniband_hca_uplink_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="11",uplink_type="SW"} 1
 		infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="10",uplink_type="SW"} 1
 	`
-	collector := NewHCACollector(&hcaDevices, false, log.NewNopLogger())
+	collector := NewHCACollector(&hcaDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -321,7 +322,7 @@ func TestHCACollectorFull(t *testing.T) {
 		infiniband_hca_uplink_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="11",uplink_type="SW"} 1
 		infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch="",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="10",uplink_type="SW"} 1
 	`
-	collector := NewHCACollector(&hcaDevices, false, log.NewNopLogger())
+	collector := NewHCACollector(&hcaDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -362,7 +363,7 @@ func TestHCACollectorError(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="hca"} 0
 	`
-	collector := NewHCACollector(&hcaDevices, false, log.NewNopLogger())
+	collector := NewHCACollector(&hcaDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -390,7 +391,7 @@ func TestHCACollectorErrorRunonce(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="hca-runonce"} 0
 	`
-	collector := NewHCACollector(&hcaDevices, true, log.NewNopLogger())
+	collector := NewHCACollector(&hcaDevices, true, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -418,7 +419,7 @@ func TestHCACollectorTimeout(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="hca"} 2
 	`
-	collector := NewHCACollector(&hcaDevices, false, log.NewNopLogger())
+	collector := NewHCACollector(&hcaDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)

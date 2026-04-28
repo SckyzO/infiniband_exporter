@@ -24,8 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -35,7 +36,7 @@ func TestParseIBSWInfo(t *testing.T) {
 		t.Fatal("Unable to read fixture")
 	}
 	data := Ibswinfo{}
-	err = parse_ibswinfo(out, &data, log.NewNopLogger())
+	err = parse_ibswinfo(out, &data, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 	}
@@ -103,7 +104,7 @@ func TestParseIBSWInfoFailedPSU(t *testing.T) {
 		t.Fatal("Unable to read fixture")
 	}
 	data := Ibswinfo{}
-	err = parse_ibswinfo(out, &data, log.NewNopLogger())
+	err = parse_ibswinfo(out, &data, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 	}
@@ -192,7 +193,7 @@ func TestParseIBSWInfoErrors(t *testing.T) {
 			t.Fatalf("Unable to read fixture %s", test)
 		}
 		data := Ibswinfo{}
-		err = parse_ibswinfo(out, &data, log.NewNopLogger())
+		err = parse_ibswinfo(out, &data, slog.New(slog.DiscardHandler))
 		if err == nil {
 			t.Errorf("Expected an error for test %s(%d)", test, i)
 		}
@@ -281,7 +282,7 @@ func TestIbswinfoCollector(t *testing.T) {
 		infiniband_switch_uptime_seconds{guid="0x506b4b03005c2740",switch="iswr0l1"} 8301347
         infiniband_switch_uptime_seconds{guid="0x7cfe9003009ce5b0",switch="iswr1l1"} 13862333
 	`
-	collector := NewIbswinfoCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -313,7 +314,7 @@ func TestIbswinfoCollectorMissingStatus(t *testing.T) {
 			return "", nil
 		}
 	}
-	collector := NewIbswinfoCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -346,8 +347,8 @@ func TestIbswinfoCollectorError(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="ibswinfo"} 0
 	`
-	w := log.NewSyncWriter(os.Stderr)
-	logger := log.NewLogfmtLogger(w)
+	w := os.Stderr
+	logger := slog.New(slog.NewTextHandler(w, nil))
 	collector := NewIbswinfoCollector(&switchDevices, false, logger)
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
@@ -386,7 +387,7 @@ func TestIbswinfoCollectorErrorRunonce(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="ibswinfo-runonce"} 0
 	`
-	collector := NewIbswinfoCollector(&switchDevices, true, log.NewNopLogger())
+	collector := NewIbswinfoCollector(&switchDevices, true, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -415,7 +416,7 @@ func TestIbswinfoCollectorTimeout(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="ibswinfo"} 2
 	`
-	collector := NewIbswinfoCollector(&switchDevices, false, log.NewNopLogger())
+	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)

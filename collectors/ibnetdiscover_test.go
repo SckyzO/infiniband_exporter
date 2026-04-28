@@ -23,8 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -45,7 +46,7 @@ func TestIbnetdiscoverCollector(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="ibnetdiscover"} 0
 	`
-	collector := NewIBNetDiscover(false, log.NewNopLogger())
+	collector := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
@@ -69,7 +70,7 @@ func TestIbnetdiscoverCollectorError(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="ibnetdiscover"} 0
 	`
-	collector := NewIBNetDiscover(false, log.NewNopLogger())
+	collector := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
@@ -93,7 +94,7 @@ func TestIbnetdiscoverCollectorErrorRunonce(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="ibnetdiscover-runonce"} 0
 	`
-	collector := NewIBNetDiscover(true, log.NewNopLogger())
+	collector := NewIBNetDiscover(true, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
@@ -117,7 +118,7 @@ func TestIbnetdiscoverCollectorTimeout(t *testing.T) {
 		# TYPE infiniband_exporter_collect_timeouts gauge
 		infiniband_exporter_collect_timeouts{collector="ibnetdiscover"} 1
 	`
-	collector := NewIBNetDiscover(false, log.NewNopLogger())
+	collector := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
@@ -168,8 +169,8 @@ func TestIbnetdiscoverParse(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read fixture")
 	}
-	w := log.NewSyncWriter(os.Stderr)
-	logger := log.NewLogfmtLogger(w)
+	w := os.Stderr
+	logger := slog.New(slog.NewTextHandler(w, nil))
 	switches, hcas, err := ibnetdiscoverParse(out, logger)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err.Error())
@@ -223,8 +224,8 @@ func TestIbnetdiscoverParse2(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read fixture")
 	}
-	w := log.NewSyncWriter(os.Stderr)
-	logger := log.NewLogfmtLogger(w)
+	w := os.Stderr
+	logger := slog.New(slog.NewTextHandler(w, nil))
 	switches, hcas, err := ibnetdiscoverParse(out, logger)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err.Error())
@@ -255,8 +256,8 @@ func TestIbnetdiscoverParse3(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read fixture")
 	}
-	w := log.NewSyncWriter(os.Stderr)
-	logger := log.NewLogfmtLogger(w)
+	w := os.Stderr
+	logger := slog.New(slog.NewTextHandler(w, nil))
 	_, _, err = ibnetdiscoverParse(out, logger)
 	if err == nil || !strings.Contains(err.Error(), "unable to extract names") {
 		t.Errorf("Unexpected error: unable to extract names")
@@ -273,7 +274,7 @@ func TestIbnetdiscoverParseErrors(t *testing.T) {
 		{Input: ibnetdiscoverBadName, ExpectedError: "unable to extract names using regexp"},
 	}
 	for i, test := range tests {
-		_, _, err := ibnetdiscoverParse(test.Input, log.NewNopLogger())
+		_, _, err := ibnetdiscoverParse(test.Input, slog.New(slog.DiscardHandler))
 		if err == nil {
 			t.Errorf("Expected an error in case %d", i)
 			continue

@@ -22,9 +22,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -36,7 +36,7 @@ var (
 
 type HCACollector struct {
 	devices                      *[]InfinibandDevice
-	logger                       log.Logger
+	logger                       *slog.Logger
 	collector                    string
 	Duration                     *prometheus.Desc
 	Error                        *prometheus.Desc
@@ -84,7 +84,7 @@ type HCAMetrics struct {
 	rcvErrError    float64
 }
 
-func NewHCACollector(devices *[]InfinibandDevice, runonce bool, logger log.Logger) *HCACollector {
+func NewHCACollector(devices *[]InfinibandDevice, runonce bool, logger *slog.Logger) *HCACollector {
 	labels := []string{"guid", "hca", "port", "switch"}
 	collector := "hca"
 	if runonce {
@@ -92,7 +92,7 @@ func NewHCACollector(devices *[]InfinibandDevice, runonce bool, logger log.Logge
 	}
 	return &HCACollector{
 		devices:   devices,
-		logger:    log.With(logger, "collector", collector),
+		logger:    logger.With("collector", collector),
 		collector: collector,
 		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "hca", "collect_duration_seconds"),
 			"Duration of collection", []string{"guid", "collector"}, nil),
@@ -356,11 +356,11 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 			metric := HCAMetrics{duration: time.Since(start).Seconds()}
 			if err == context.DeadlineExceeded {
 				metric.timeout = 1
-				level.Error(h.logger).Log("msg", "Timeout collecting extended perfquery counters", "guid", device.GUID)
+				h.logger.Error("Timeout collecting extended perfquery counters", "guid", device.GUID)
 				atomic.AddUint64(&timeouts, 1)
 			} else if err != nil {
 				metric.error = 1
-				level.Error(h.logger).Log("msg", "Error collecting extended perfquery counters", "guid", device.GUID, "err", err)
+				h.logger.Error("Error collecting extended perfquery counters", "guid", device.GUID, "err", err)
 				atomic.AddUint64(&errors, 1)
 			}
 			if err != nil {
@@ -369,7 +369,7 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 			deviceCounters, errs := perfqueryParse(device, extendedOut, h.logger)
 			atomic.AddUint64(&errors, uint64(errs))
 			if *hcaCollectBase {
-				level.Debug(h.logger).Log("msg", "Adding parsed counters", "count", len(deviceCounters), "guid", device.GUID, "name", device.Name)
+				h.logger.Debug("Adding parsed counters", "count", len(deviceCounters), "guid", device.GUID, "name", device.Name)
 				countersLock.Lock()
 				counters = append(counters, deviceCounters...)
 				countersLock.Unlock()
@@ -386,12 +386,12 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 						metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
 						if err == context.DeadlineExceeded {
 							metric.rcvErrTimeout = 1
-							level.Error(h.logger).Log("msg", "Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
+							h.logger.Error("Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
 							atomic.AddUint64(&timeouts, 1)
 							return
 						} else if err != nil {
 							metric.rcvErrError = 1
-							level.Error(h.logger).Log("msg", "Error collecting rcvErr perfquery counters", "guid", device.GUID, "err", err)
+							h.logger.Error("Error collecting rcvErr perfquery counters", "guid", device.GUID, "err", err)
 							atomic.AddUint64(&errors, 1)
 							return
 						}

@@ -22,9 +22,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -36,7 +36,7 @@ var (
 
 type SwitchCollector struct {
 	devices                      *[]InfinibandDevice
-	logger                       log.Logger
+	logger                       *slog.Logger
 	collector                    string
 	Duration                     *prometheus.Desc
 	Error                        *prometheus.Desc
@@ -84,7 +84,7 @@ type SwitchMetrics struct {
 	rcvErrError    float64
 }
 
-func NewSwitchCollector(devices *[]InfinibandDevice, runonce bool, logger log.Logger) *SwitchCollector {
+func NewSwitchCollector(devices *[]InfinibandDevice, runonce bool, logger *slog.Logger) *SwitchCollector {
 	labels := []string{"guid", "port", "switch"}
 	collector := "switch"
 	if runonce {
@@ -92,7 +92,7 @@ func NewSwitchCollector(devices *[]InfinibandDevice, runonce bool, logger log.Lo
 	}
 	return &SwitchCollector{
 		devices:   devices,
-		logger:    log.With(logger, "collector", collector),
+		logger:    logger.With("collector", collector),
 		collector: collector,
 		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_duration_seconds"),
 			"Duration of collection", []string{"guid", "collector"}, nil),
@@ -355,11 +355,11 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 			metric := SwitchMetrics{duration: time.Since(start).Seconds()}
 			if err == context.DeadlineExceeded {
 				metric.timeout = 1
-				level.Error(s.logger).Log("msg", "Timeout collecting extended perfquery counters", "guid", device.GUID)
+				s.logger.Error("Timeout collecting extended perfquery counters", "guid", device.GUID)
 				atomic.AddUint64(&timeouts, 1)
 			} else if err != nil {
 				metric.error = 1
-				level.Error(s.logger).Log("msg", "Error collecting extended perfquery counters", "guid", device.GUID, "err", err)
+				s.logger.Error("Error collecting extended perfquery counters", "guid", device.GUID, "err", err)
 				atomic.AddUint64(&errors, 1)
 			}
 			if err != nil {
@@ -368,7 +368,7 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 			deviceCounters, errs := perfqueryParse(device, extendedOut, s.logger)
 			atomic.AddUint64(&errors, uint64(errs))
 			if *switchCollectBase {
-				level.Debug(s.logger).Log("msg", "Adding parsed counters", "count", len(deviceCounters), "guid", device.GUID, "name", device.Name)
+				s.logger.Debug("Adding parsed counters", "count", len(deviceCounters), "guid", device.GUID, "name", device.Name)
 				countersLock.Lock()
 				counters = append(counters, deviceCounters...)
 				countersLock.Unlock()
@@ -387,12 +387,12 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 						metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
 						if err == context.DeadlineExceeded {
 							metric.rcvErrTimeout = 1
-							level.Error(s.logger).Log("msg", "Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
+							s.logger.Error("Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
 							atomic.AddUint64(&timeouts, 1)
 							return
 						} else if err != nil {
 							metric.rcvErrError = 1
-							level.Error(s.logger).Log("msg", "Error collecting rcvErr perfquery counters", "guid", device.GUID, "err", err)
+							s.logger.Error("Error collecting rcvErr perfquery counters", "guid", device.GUID, "err", err)
 							atomic.AddUint64(&errors, 1)
 							return
 						}

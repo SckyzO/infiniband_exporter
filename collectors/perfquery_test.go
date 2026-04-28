@@ -23,8 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
 )
 
 var (
@@ -109,9 +110,9 @@ func TestPerfqueryParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	w := log.NewSyncWriter(os.Stderr)
-	logger := log.NewLogfmtLogger(w)
-	// logger := log.NewNopLogger()
+	w := os.Stderr
+	logger := slog.New(slog.NewTextHandler(w, nil))
+	// logger := slog.New(slog.DiscardHandler)
 	counters, errors := perfqueryParse(perfqueryTestDevice, out, logger)
 	if errors != 0 {
 		t.Errorf("Unexpected errors")
@@ -161,7 +162,7 @@ func TestPerfqueryParseRcvErrorDetails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	counters, errors := perfqueryParse(perfqueryTestDevice, out, log.NewNopLogger())
+	counters, errors := perfqueryParse(perfqueryTestDevice, out, slog.New(slog.DiscardHandler))
 	if errors != 0 {
 		t.Errorf("Unexpected errors")
 		return
@@ -178,8 +179,8 @@ func TestPerfqueryParseErrors(t *testing.T) {
 	}{
 		{Input: perfqueryOutErr, ExpectedErrors: 2},
 	}
-	w := log.NewSyncWriter(os.Stderr)
-	logger := log.NewLogfmtLogger(w)
+	w := os.Stderr
+	logger := slog.New(slog.NewTextHandler(w, nil))
 	for i, test := range tests {
 		_, errors := perfqueryParse(perfqueryTestDevice, test.Input, logger)
 		if errors != test.ExpectedErrors {

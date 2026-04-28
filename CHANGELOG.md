@@ -1,3 +1,26 @@
+## 0.14.0 / 2026-04-29
+
+Modernization: Go 1.26, slog, dependency bumps, alignment with sibling
+exporters' conventions.
+
+### ⚠️ Breaking — endpoint convention
+
+* `/internal/metrics` is removed. Go runtime / process / promhttp self-metrics return to `/metrics`, gated by `--web.disable-exporter-metrics` (which now skips registering `GoCollector` and `ProcessCollector` instead of disabling a route). This aligns with `node_exporter`, `mysqld_exporter`, and the in-house `slurm_exporter`. If a Prometheus job was scraping `/internal/metrics`, repoint it to `/metrics` and use `metric_relabel_configs` if you need to filter `go_*` / `process_*` / `promhttp_*`.
+* `go_build_info` is now always exposed (via `prometheus.NewBuildInfoCollector`), even when `--web.disable-exporter-metrics` is set. Surfaces the running version and revision without a separate scrape job.
+* New endpoint `/healthz` (returns `200 ok`) for Kubernetes / systemd liveness probes. It does *not* check fabric reachability — only that the HTTP server is up.
+
+### Changed
+
+* Go module bumped: `1.22` → `1.26`.
+* Logging migrated from `github.com/go-kit/log` to the stdlib `log/slog`. `--log.level` and `--log.format` are now provided by `prometheus/common/promslog`. Output format changes slightly: each line is a single key-value record, with `level=` instead of `level=…`; downstream log parsers may need adjusting.
+* Dependency bumps to latest stable:
+  - `prometheus/client_golang` 1.19.1 → 1.23.2
+  - `prometheus/common` 0.53.0 → 0.67.5 (was blocking Dependabot — `promlog` removed in 0.67, hence the `slog` migration)
+  - `prometheus/exporter-toolkit` 0.11.0 → 0.16.0
+  - `gofrs/flock` 0.8.1 → 0.13.0
+  - `golang.org/x/{crypto,net,oauth2,sync,sys,text}` to current
+* `make smoke` updated to probe `/healthz` and the new layout.
+
 ## 0.13.0 / 2026-04-28
 
 Critical bug fixes, endpoint split, errcheck enabled.

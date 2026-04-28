@@ -15,163 +15,161 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/gofrs/flock"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/promlog"
-	"github.com/prometheus/common/promlog/flag"
+	"github.com/prometheus/common/promslog"
+	"github.com/prometheus/common/promslog/flag"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 
-	"github.com/SckyzO/infiniband_exporter/collectors"
+	ibcollectors "github.com/SckyzO/infiniband_exporter/collectors"
 )
 
 const (
-	metricsEndpoint         = "/metrics"
-	internalMetricsEndpoint = "/internal/metrics"
+	metricsEndpoint = "/metrics"
+	healthEndpoint  = "/healthz"
 )
 
 var (
 	runOnce  = kingpin.Flag("exporter.runonce", "Run exporter once and write metrics to file").Default("false").Bool()
 	output   = kingpin.Flag("exporter.output", "Output file to write metrics to when using runonce").Default("").String()
 	lockFile = kingpin.Flag("exporter.lockfile", "Lock file path").Default("/tmp/infiniband_exporter.lock").String()
-	// /metrics serves only InfiniBand metrics. The Go runtime / process /
-	// promhttp self-metrics are exposed on a separate endpoint
-	// (/internal/metrics) so users can scrape the exporter's own health
-	// at a different cadence — or skip it entirely.
-	disableExporterMetrics = kingpin.Flag("web.disable-exporter-metrics", "Disable the "+internalMetricsEndpoint+" endpoint (Go runtime, process, promhttp)").Default("false").Bool()
+	// When true, the registry skips registering Go runtime / process collectors.
+	// build_info is always registered. Filtering of go_*/process_*/promhttp_*
+	// at scrape time is left to Prometheus metric_relabel_configs.
+	disableExporterMetrics = kingpin.Flag("web.disable-exporter-metrics", "Exclude Go runtime and process metrics from /metrics").Default("false").Bool()
 	toolkitFlags           = webflag.AddFlags(kingpin.CommandLine, ":9315")
 )
 
-func setupGathers(runonce bool, logger log.Logger) prometheus.Gatherer {
+func setupGathers(runonce bool, logger *slog.Logger) prometheus.Gatherer {
 	registry := prometheus.NewRegistry()
 
-	ibnetdiscoverCollector := collectors.NewIBNetDiscover(runonce, logger)
+	// Always expose build_info — surface version, revision, and Go toolchain
+	// to operators without requiring a separate scrape job.
+	registry.MustRegister(collectors.NewBuildInfoCollector())
+	if !runonce && !*disableExporterMetrics {
+		// Go and Process collectors are not useful in runonce/textfile mode
+		// (the process exits immediately) so we skip them there.
+		registry.MustRegister(
+			collectors.NewGoCollector(),
+			collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		)
+	}
+
+	ibnetdiscoverCollector := ibcollectors.NewIBNetDiscover(runonce, logger)
 	registry.MustRegister(ibnetdiscoverCollector)
 	switches, hcas, err := ibnetdiscoverCollector.GetPorts()
 	if err != nil {
-		level.Error(logger).Log("msg", "Error collecting ports with ibnetdiscover", "err", err)
+		logger.Error("Error collecting ports with ibnetdiscover", "err", err)
 	} else {
-		if *collectors.CollectSwitch {
-			switchCollector := collectors.NewSwitchCollector(switches, runonce, logger)
-			registry.MustRegister(switchCollector)
+		if *ibcollectors.CollectSwitch {
+			registry.MustRegister(ibcollectors.NewSwitchCollector(switches, runonce, logger))
 		}
-		if *collectors.CollectIbswinfo {
-			ibswinfoCollector := collectors.NewIbswinfoCollector(switches, runonce, logger)
-			registry.MustRegister(ibswinfoCollector)
+		if *ibcollectors.CollectIbswinfo {
+			registry.MustRegister(ibcollectors.NewIbswinfoCollector(switches, runonce, logger))
 		}
-		if *collectors.CollectHCA {
-			hcaCollector := collectors.NewHCACollector(hcas, runonce, logger)
-			registry.MustRegister(hcaCollector)
+		if *ibcollectors.CollectHCA {
+			registry.MustRegister(ibcollectors.NewHCACollector(hcas, runonce, logger))
 		}
 	}
 
-	return prometheus.Gatherers{registry}
+	return registry
 }
 
-func metricsHandler(logger log.Logger) http.HandlerFunc {
+func metricsHandler(logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		gatherers := setupGathers(false, logger)
-
-		// Delegate http serving to Prometheus client library, which will call collector.Collect.
-		h := promhttp.HandlerFor(gatherers, promhttp.HandlerOpts{})
+		gatherer := setupGathers(false, logger)
+		h := promhttp.HandlerFor(gatherer, promhttp.HandlerOpts{
+			EnableOpenMetrics: true,
+		})
 		h.ServeHTTP(w, r)
 	}
 }
 
-func writeMetrics(logger log.Logger) error {
+func writeMetrics(logger *slog.Logger) error {
 	tmp, err := os.CreateTemp(filepath.Dir(*output), filepath.Base(*output))
 	if err != nil {
-		level.Error(logger).Log("msg", "Unable to create temporary file", "err", err)
+		logger.Error("Unable to create temporary file", "err", err)
 		return err
 	}
-	// Best-effort cleanup; if Rename succeeded the file is already gone
-	// and Remove will return ENOENT, which we deliberately ignore.
+	// Best-effort cleanup; Rename consumes the tempfile on success.
 	defer func() { _ = os.Remove(tmp.Name()) }()
-	gatherers := setupGathers(true, logger)
-	err = prometheus.WriteToTextfile(tmp.Name(), gatherers)
-	if err != nil {
-		level.Error(logger).Log("msg", "Error writing Prometheus metrics to file", "path", tmp.Name(), "err", err)
+	gatherer := setupGathers(true, logger)
+	if err := prometheus.WriteToTextfile(tmp.Name(), gatherer); err != nil {
+		logger.Error("Error writing Prometheus metrics to file", "path", tmp.Name(), "err", err)
 		return err
 	}
-	err = os.Rename(tmp.Name(), *output)
-	if err != nil {
-		level.Error(logger).Log("msg", "Error renaming temporary file to output", "tmp", tmp.Name(), "output", *output, "err", err)
+	if err := os.Rename(tmp.Name(), *output); err != nil {
+		logger.Error("Error renaming temporary file to output", "tmp", tmp.Name(), "output", *output, "err", err)
 		return err
 	}
 	return nil
 }
 
-func run(logger log.Logger) error {
+func run(logger *slog.Logger) error {
 	if *runOnce {
 		if *output == "" {
-			return fmt.Errorf("Must specify output path when using runonce mode")
+			return fmt.Errorf("must specify output path when using runonce mode")
 		}
 		fileLock := flock.New(*lockFile)
 		unlocked, err := fileLock.TryLock()
 		if err != nil {
-			level.Error(logger).Log("msg", "Unable to obtain lock on lock file", "lockfile", *lockFile)
+			logger.Error("Unable to obtain lock on lock file", "lockfile", *lockFile)
 			return err
 		}
 		if !unlocked {
-			return fmt.Errorf("Lock file %s is locked", *lockFile)
+			return fmt.Errorf("lock file %s is locked", *lockFile)
 		}
-		err = writeMetrics(logger)
-		if err != nil {
-			return err
-		}
-		return nil
+		return writeMetrics(logger)
 	}
-	level.Info(logger).Log("msg", "Starting infiniband_exporter", "version", version.Info())
-	level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
+	logger.Info("Starting infiniband_exporter", "version", version.Info())
+	logger.Info("Build context", "build_context", version.BuildContext())
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		body := `<html>
+		_, _ = w.Write([]byte(`<html>
              <head><title>InfiniBand Exporter</title></head>
              <body>
              <h1>InfiniBand Exporter</h1>
-             <p><a href='` + metricsEndpoint + `'>InfiniBand metrics</a></p>`
-		if !*disableExporterMetrics {
-			body += `<p><a href='` + internalMetricsEndpoint + `'>Exporter internal metrics (Go runtime, process, promhttp)</a></p>`
-		}
-		body += `</body></html>`
-		//nolint:errcheck
-		w.Write([]byte(body))
+             <p><a href='` + metricsEndpoint + `'>Metrics</a></p>
+             </body>
+             </html>`))
 	})
 	http.Handle(metricsEndpoint, metricsHandler(logger))
-	if !*disableExporterMetrics {
-		// Default registry already has go_*, process_* and promhttp_*
-		// collectors registered by client_golang's init.
-		http.Handle(internalMetricsEndpoint, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{}))
-	}
+	// /healthz returns 200 OK as long as the HTTP server is up. This lets
+	// orchestrators (Kubernetes, systemd watchdog) distinguish "exporter
+	// process alive" from "InfiniBand fabric reachable".
+	http.HandleFunc(healthEndpoint, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
 	srv := &http.Server{}
 	if err := web.ListenAndServe(srv, toolkitFlags, logger); err != nil {
-		level.Error(logger).Log("msg", "Error starting HTTP server", "err", err)
+		logger.Error("Error starting HTTP server", "err", err)
 		return err
 	}
 	return nil
 }
 
 func main() {
-	promlogConfig := &promlog.Config{}
-	flag.AddFlags(kingpin.CommandLine, promlogConfig)
+	promslogConfig := &promslog.Config{}
+	flag.AddFlags(kingpin.CommandLine, promslogConfig)
 	kingpin.Version(version.Print("infiniband_exporter"))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	logger := promlog.New(promlogConfig)
+	logger := promslog.New(promslogConfig)
 
-	err := run(logger)
-	if err != nil {
-		level.Error(logger).Log("err", err)
+	if err := run(logger); err != nil {
+		logger.Error("Exporter failed", "err", err)
 		os.Exit(1)
 	}
 }

@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"log/slog"
+
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 
 	"github.com/SckyzO/infiniband_exporter/collectors"
 )
@@ -359,12 +359,12 @@ infiniband_exporter_collect_timeouts{collector="ibnetdiscover-runonce"} 0`
 )
 
 func TestMain(m *testing.M) {
-	w := log.NewSyncWriter(os.Stderr)
-	logger := log.NewLogfmtLogger(w)
+	w := os.Stderr
+	logger := slog.New(slog.NewTextHandler(w, nil))
 	collectors.IbnetdiscoverExec = func(ctx context.Context) (string, error) {
 		out, err := collectors.ReadFixture("ibnetdiscover", "test")
 		if err != nil {
-			level.Error(logger).Log("err", err)
+			logger.Error("error", "err", err)
 			os.Exit(1)
 		}
 		return out, nil
@@ -372,7 +372,7 @@ func TestMain(m *testing.M) {
 	collectors.PerfqueryExec = func(guid string, port string, extraArgs []string, ctx context.Context) (string, error) {
 		out, err := collectors.ReadFixture("perfquery", guid)
 		if err != nil {
-			level.Error(logger).Log("err", err)
+			logger.Error("error", "err", err)
 			os.Exit(1)
 		}
 		return out, nil
@@ -402,7 +402,7 @@ func TestCollectToFile(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{fmt.Sprintf("--exporter.output=%s", outputPath), "--exporter.runonce"}); err != nil {
 		t.Fatal(err)
 	}
-	err = run(log.NewNopLogger())
+	err = run(slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err.Error())
 		return
@@ -429,7 +429,7 @@ func TestCollect(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() {
-		err = run(log.NewNopLogger())
+		err = run(slog.New(slog.DiscardHandler))
 	}()
 	if err != nil {
 		t.Fatal(err)
@@ -481,10 +481,15 @@ func TestCollect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error GET %s: %s", metricsEndpoint, err.Error())
 	}
-	// Remove duration as can't mock value yet
-	re := regexp.MustCompile(".*infiniband_exporter_collector_duration_seconds.*")
+	// Strip noise we cannot pin: per-scrape duration, and the always-on
+	// build_info collector (registered as part of the standard exporter
+	// surface from v0.14.0 onward).
+	re := regexp.MustCompile(`(?m)^.*infiniband_exporter_collector_duration_seconds.*$`)
 	body = re.ReplaceAllString(body, "")
+	buildInfoRe := regexp.MustCompile(`(?m)^.*go_build_info.*$`)
+	body = buildInfoRe.ReplaceAllString(body, "")
 	body = strings.TrimSpace(body)
+	body = regexp.MustCompile(`\n{2,}`).ReplaceAllString(body, "\n")
 	expectedIbnetdiscoverError = runonceRe.ReplaceAllString(expectedIbnetdiscoverError, "")
 	if body != expectedIbnetdiscoverError {
 		t.Errorf("Unexpected body\nExpected:\n%s\nGot:\n%s\n", expectedIbnetdiscoverError, body)
