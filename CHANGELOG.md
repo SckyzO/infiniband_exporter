@@ -1,3 +1,18 @@
+## 0.17.0 / 2026-04-29
+
+Internal refactor: switch / HCA factorization, ibnetdiscover topology cache.
+Zero externally-visible behaviour changes; metric names, labels, HELP texts,
+and flag defaults are unchanged.
+
+### Changed (internal)
+
+* New `collectors/port_counters.go` carries the single-source-of-truth list of all 28 perfquery-derived port counters (`portCounterDefs`). Both `SwitchCollector` and `HCACollector` now build their `*prometheus.Desc` map via `buildPortCounterDescs(subsystem, labels)` and emit samples through `emitPortCounters(...)`. Adding a new IB counter is now one `portCounterDef` entry instead of four edits across two files.
+* `switch.go` 405 → 228 lines, `hca.go` 420 → 225 lines (≈ 370 lines removed, replaced by 160 lines in the shared file).
+
+### Added
+
+* `--ibnetdiscover.cache-ttl` (default `0` — disabled, identical to pre-v0.17 behaviour). Setting a non-zero TTL caches the parsed topology process-globally so subsequent scrapes reuse it instead of re-running `ibnetdiscover`. Useful on large fabrics where `ibnetdiscover` takes seconds; perfquery counters are still re-collected on every scrape. New tests `TestIbnetdiscoverCache{Disabled,Hit,Expired}` cover the cache paths.
+
 ## 0.16.0 / 2026-04-29
 
 Prometheus naming and HELP cleanup; per-device `_up`. Last batch of breaking

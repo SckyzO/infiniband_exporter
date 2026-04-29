@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -481,5 +482,90 @@ func TestIibnetdiscoverTimeout(t *testing.T) {
 	}
 	if out != "" {
 		t.Errorf("Unexpected out: %s", out)
+	}
+}
+
+// resetIbnetdiscoverCache wipes the package-global cache so tests do not
+// leak state across each other.
+func resetIbnetdiscoverCache() {
+	ibnetdiscoverCache.mu.Lock()
+	ibnetdiscoverCache.switches = nil
+	ibnetdiscoverCache.hcas = nil
+	ibnetdiscoverCache.refresh = time.Time{}
+	ibnetdiscoverCache.mu.Unlock()
+}
+
+// TestIbnetdiscoverCacheDisabled verifies TTL=0 reproduces pre-v0.17.0
+// behaviour: every call shells out to ibnetdiscover.
+func TestIbnetdiscoverCacheDisabled(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibnetdiscover.cache-ttl=0"}); err != nil {
+		t.Fatal(err)
+	}
+	defer resetIbnetdiscoverCache()
+	resetIbnetdiscoverCache()
+	var calls atomic.Uint64
+	IbnetdiscoverExec = func(ctx context.Context) (string, error) {
+		calls.Add(1)
+		return ReadFixture("ibnetdiscover", "test")
+	}
+	for i := 0; i < 3; i++ {
+		ib := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
+		if _, _, err := ib.GetPorts(); err != nil {
+			t.Fatalf("Unexpected GetPorts error: %s", err)
+		}
+	}
+	if got := calls.Load(); got != 3 {
+		t.Errorf("Expected 3 ibnetdiscover calls when cache disabled, got %d", got)
+	}
+}
+
+// TestIbnetdiscoverCacheHit verifies the cache short-circuits subsequent
+// calls within the TTL window.
+func TestIbnetdiscoverCacheHit(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibnetdiscover.cache-ttl=15m"}); err != nil {
+		t.Fatal(err)
+	}
+	defer resetIbnetdiscoverCache()
+	resetIbnetdiscoverCache()
+	var calls atomic.Uint64
+	IbnetdiscoverExec = func(ctx context.Context) (string, error) {
+		calls.Add(1)
+		return ReadFixture("ibnetdiscover", "test")
+	}
+	for i := 0; i < 3; i++ {
+		ib := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
+		if _, _, err := ib.GetPorts(); err != nil {
+			t.Fatalf("Unexpected GetPorts error: %s", err)
+		}
+	}
+	if got := calls.Load(); got != 1 {
+		t.Errorf("Expected 1 ibnetdiscover call (rest cached), got %d", got)
+	}
+}
+
+// TestIbnetdiscoverCacheExpired verifies that the second call after the
+// TTL elapses re-shells out.
+func TestIbnetdiscoverCacheExpired(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibnetdiscover.cache-ttl=10ms"}); err != nil {
+		t.Fatal(err)
+	}
+	defer resetIbnetdiscoverCache()
+	resetIbnetdiscoverCache()
+	var calls atomic.Uint64
+	IbnetdiscoverExec = func(ctx context.Context) (string, error) {
+		calls.Add(1)
+		return ReadFixture("ibnetdiscover", "test")
+	}
+	ib1 := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
+	if _, _, err := ib1.GetPorts(); err != nil {
+		t.Fatalf("Unexpected GetPorts error: %s", err)
+	}
+	time.Sleep(20 * time.Millisecond)
+	ib2 := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
+	if _, _, err := ib2.GetPorts(); err != nil {
+		t.Fatalf("Unexpected GetPorts error: %s", err)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Errorf("Expected 2 ibnetdiscover calls (cache expired between them), got %d", got)
 	}
 }

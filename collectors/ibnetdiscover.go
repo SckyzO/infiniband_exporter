@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"log/slog"
@@ -34,6 +35,11 @@ var (
 	ibnetdiscoverPath    = kingpin.Flag("ibnetdiscover.path", "Path to ibnetdiscover").Default("ibnetdiscover").String()
 	nodeNameMap          = kingpin.Flag("ibnetdiscover.node-name-map", "Path to node name map file").Default("").String()
 	ibnetdiscoverTimeout = kingpin.Flag("ibnetdiscover.timeout", "Timeout for ibnetdiscover execution").Default("20s").Duration()
+	// On a large fabric (>100 switches) ibnetdiscover takes ~10 s per
+	// scrape. With a non-zero TTL the parsed topology is reused across
+	// scrapes; only the perfquery counters are re-collected each time.
+	// Default 0 keeps pre-v0.17 behaviour (every scrape re-runs ibnetdiscover).
+	ibnetdiscoverCacheTTL = kingpin.Flag("ibnetdiscover.cache-ttl", "TTL for caching the ibnetdiscover topology. 0 disables the cache.").Default("0").Duration()
 	// IB Lane Rate Specification: {signaling rate, effective rate}, Gbps
 	//	https://en.wikipedia.org/wiki/InfiniBand#Performance
 	laneRates = map[string][]float64{
@@ -78,6 +84,19 @@ type IBNetDiscover struct {
 	collector     string
 }
 
+// ibnetdiscoverCache holds the latest successfully parsed topology so
+// scrapes can reuse it for up to --ibnetdiscover.cache-ttl. The cache is
+// process-global because every HTTP scrape constructs a fresh
+// IBNetDiscover instance via setupGathers().
+type ibnetdiscoverCacheT struct {
+	mu       sync.Mutex
+	switches *[]InfinibandDevice
+	hcas     *[]InfinibandDevice
+	refresh  time.Time
+}
+
+var ibnetdiscoverCache ibnetdiscoverCacheT
+
 func NewIBNetDiscover(runonce bool, logger *slog.Logger) *IBNetDiscover {
 	collector := "ibnetdiscover"
 	if runonce {
@@ -90,6 +109,16 @@ func NewIBNetDiscover(runonce bool, logger *slog.Logger) *IBNetDiscover {
 }
 
 func (ib *IBNetDiscover) GetPorts() (*[]InfinibandDevice, *[]InfinibandDevice, error) {
+	if ttl := *ibnetdiscoverCacheTTL; ttl > 0 {
+		ibnetdiscoverCache.mu.Lock()
+		fresh := !ibnetdiscoverCache.refresh.IsZero() && time.Since(ibnetdiscoverCache.refresh) < ttl
+		sw, hc := ibnetdiscoverCache.switches, ibnetdiscoverCache.hcas
+		ibnetdiscoverCache.mu.Unlock()
+		if fresh {
+			ib.logger.Debug("Reusing cached ibnetdiscover topology", "age", time.Since(ibnetdiscoverCache.refresh))
+			return sw, hc, nil
+		}
+	}
 	collectTime := time.Now()
 	switches, hcas, err := ib.collect()
 	ib.duration = time.Since(collectTime).Seconds()
@@ -99,6 +128,13 @@ func (ib *IBNetDiscover) GetPorts() (*[]InfinibandDevice, *[]InfinibandDevice, e
 	} else if err != nil {
 		ib.logger.Error("Error executing ibnetdiscover", "err", err)
 		ib.errorMetric = 1
+	}
+	if err == nil && *ibnetdiscoverCacheTTL > 0 {
+		ibnetdiscoverCache.mu.Lock()
+		ibnetdiscoverCache.switches = switches
+		ibnetdiscoverCache.hcas = hcas
+		ibnetdiscoverCache.refresh = time.Now()
+		ibnetdiscoverCache.mu.Unlock()
 	}
 	return switches, hcas, err
 }
