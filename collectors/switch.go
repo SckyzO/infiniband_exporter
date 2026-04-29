@@ -73,6 +73,7 @@ type SwitchCollector struct {
 	RawRate                      *prometheus.Desc
 	Uplink                       *prometheus.Desc
 	Info                         *prometheus.Desc
+	Up                           *prometheus.Desc
 }
 
 type SwitchMetrics struct {
@@ -95,75 +96,77 @@ func NewSwitchCollector(devices *[]InfinibandDevice, runonce bool, logger *slog.
 		logger:    logger.With("collector", collector),
 		collector: collector,
 		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_duration_seconds"),
-			"Duration of collection", []string{"guid", "collector"}, nil),
+			"Time spent collecting metrics for this device, in seconds.", []string{"guid", "collector"}, nil),
 		Error: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_error"),
-			"Indicates if collect error", []string{"guid", "collector"}, nil),
+			"1 if the most recent collection for this device errored, 0 otherwise.", []string{"guid", "collector"}, nil),
 		Timeout: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "collect_timeout"),
-			"Indicates if collect timeout", []string{"guid", "collector"}, nil),
+			"1 if the most recent collection for this device timed out, 0 otherwise.", []string{"guid", "collector"}, nil),
 		PortXmitData: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_transmit_data_bytes_total"),
-			"Infiniband switch port PortXmitData", labels, nil),
+			"Total data octets transmitted on this port (perfquery PortXmitData scaled to bytes — IB octets are 4-byte words).", labels, nil),
 		PortRcvData: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_receive_data_bytes_total"),
-			"Infiniband switch port PortRcvData", labels, nil),
+			"Total data octets received on this port (perfquery PortRcvData scaled to bytes — IB octets are 4-byte words).", labels, nil),
 		PortXmitPkts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_transmit_packets_total"),
-			"Infiniband switch port PortXmitPkts", labels, nil),
+			"Total packets transmitted on this port (any size, any traffic class).", labels, nil),
 		PortRcvPkts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_receive_packets_total"),
-			"Infiniband switch port PortRcvPkts", labels, nil),
+			"Total packets received on this port (any size, any traffic class).", labels, nil),
 		PortUnicastXmitPkts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_unicast_transmit_packets_total"),
-			"Infiniband switch port PortUnicastXmitPkts", labels, nil),
+			"Total unicast packets transmitted on this port.", labels, nil),
 		PortUnicastRcvPkts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_unicast_receive_packets_total"),
-			"Infiniband switch port PortUnicastRcvPkts", labels, nil),
+			"Total unicast packets received on this port.", labels, nil),
 		PortMulticastXmitPkts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_multicast_transmit_packets_total"),
-			"Infiniband switch port PortMulticastXmitPkts", labels, nil),
+			"Total multicast packets transmitted on this port.", labels, nil),
 		PortMulticastRcvPkts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_multicast_receive_packets_total"),
-			"Infiniband switch port PortMulticastRcvPkts", labels, nil),
+			"Total multicast packets received on this port.", labels, nil),
 		SymbolErrorCounter: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_symbol_error_total"),
-			"Infiniband switch port SymbolErrorCounter", labels, nil),
+			"Minor link errors detected on one or more physical lanes (SymbolErrorCounter).", labels, nil),
 		LinkErrorRecoveryCounter: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_link_error_recovery_total"),
-			"Infiniband switch port LinkErrorRecoveryCounter", labels, nil),
+			"Times the link successfully completed the link error recovery process.", labels, nil),
 		LinkDownedCounter: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_link_downed_total"),
-			"Infiniband switch port LinkDownedCounter", labels, nil),
+			"Times the link error recovery process failed and the link went down.", labels, nil),
 		PortRcvErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_receive_errors_total"),
-			"Infiniband switch port PortRcvErrors", labels, nil),
+			"Errors detected on receive packets for any reason (PortRcvErrors).", labels, nil),
 		PortRcvRemotePhysicalErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_receive_remote_physical_errors_total"),
-			"Infiniband switch port PortRcvRemotePhysicalErrors", labels, nil),
+			"Receive errors caused by a remote physical-layer error (e.g. EBP marker).", labels, nil),
 		PortRcvSwitchRelayErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_receive_switch_relay_errors_total"),
-			"Infiniband switch port PortRcvSwitchRelayErrors", labels, nil),
+			"Packets dropped during switch routing because no relay path was available.", labels, nil),
 		PortXmitDiscards: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_transmit_discards_total"),
-			"Infiniband switch port PortXmitDiscards", labels, nil),
+			"Outbound packets discarded because the port was busy or down (PortXmitDiscards).", labels, nil),
 		PortXmitConstraintErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_transmit_constraint_errors_total"),
-			"Infiniband switch port PortXmitConstraintErrors", labels, nil),
+			"Outbound packets discarded because of a partitioning or rate-limit constraint.", labels, nil),
 		PortRcvConstraintErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_receive_constraint_errors_total"),
-			"Infiniband switch port PortRcvConstraintErrors", labels, nil),
+			"Inbound packets discarded because of a partitioning or rate-limit constraint.", labels, nil),
 		LocalLinkIntegrityErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_local_link_integrity_errors_total"),
-			"Infiniband switch port LocalLinkIntegrityErrors", labels, nil),
+			"Local link integrity threshold errors (LocalLinkIntegrityErrors).", labels, nil),
 		ExcessiveBufferOverrunErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_excessive_buffer_overrun_errors_total"),
-			"Infiniband switch port ExcessiveBufferOverrunErrors", labels, nil),
+			"Excessive buffer overrun errors — receive buffer overran the configured threshold.", labels, nil),
 		VL15Dropped: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_vl15_dropped_total"),
-			"Infiniband switch port VL15Dropped", labels, nil),
+			"Subnet management packets (VL15) dropped because of resource limitations.", labels, nil),
 		PortXmitWait: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_transmit_wait_total"),
-			"Infiniband switch port PortXmitWait", labels, nil),
+			"Time ticks during which the port had data to transmit but no flow-control credits available — primary congestion signal.", labels, nil),
 		QP1Dropped: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_qp1_dropped_total"),
-			"Infiniband switch port QP1Dropped", labels, nil),
+			"Subnet management QP1 packets dropped (QP1Dropped).", labels, nil),
 		PortLocalPhysicalErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_local_physical_errors_total"),
-			"Infiniband switch port PortLocalPhysicalErrors", labels, nil),
+			"Local physical-layer errors detected on inbound traffic (PortLocalPhysicalErrors).", labels, nil),
 		PortMalformedPktErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_malformed_packet_errors_total"),
-			"Infiniband switch port PortMalformedPktErrors", labels, nil),
+			"Inbound packets discarded because they were malformed.", labels, nil),
 		PortBufferOverrunErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_buffer_overrun_errors_total"),
-			"Infiniband switch port PortBufferOverrunErrors", labels, nil),
-		PortDLIDMappingErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_dli_mapping_errors_total"),
-			"Infiniband switch port PortDLIDMappingErrors", labels, nil),
+			"Inbound packets dropped because the receive buffer overran (PortBufferOverrunErrors).", labels, nil),
+		PortDLIDMappingErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_dlid_mapping_errors_total"),
+			"Inbound packets dropped because the destination LID had no valid mapping (PortDLIDMappingErrors).", labels, nil),
 		PortVLMappingErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_vl_mapping_errors_total"),
-			"Infiniband switch port PortVLMappingErrors", labels, nil),
+			"Inbound packets dropped because the SL→VL mapping was invalid (PortVLMappingErrors).", labels, nil),
 		PortLoopingErrors: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_looping_errors_total"),
-			"Infiniband switch port PortLoopingErrors", labels, nil),
+			"Inbound packets dropped because they were detected as looping (PortLoopingErrors).", labels, nil),
 		Rate: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_rate_bytes_per_second"),
-			"Infiniband switch port rate", labels, nil),
+			"Effective port rate in bytes per second (after IB encoding overhead removed).", labels, nil),
 		RawRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_raw_rate_bytes_per_second"),
-			"Infiniband switch port raw rate", labels, nil),
+			"Raw port rate in bytes per second (signaling rate, before encoding overhead).", labels, nil),
 		Uplink: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "uplink_info"),
-			"Infiniband switch uplink information", append(labels, []string{"uplink", "uplink_guid", "uplink_type", "uplink_port", "uplink_lid"}...), nil),
+			"Constant 1 describing the device connected to this switch port.", append(labels, []string{"uplink", "uplink_guid", "uplink_type", "uplink_port", "uplink_lid"}...), nil),
 		Info: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "info"),
-			"Infiniband switch information", []string{"guid", "switch", "lid"}, nil),
+			"Constant 1 carrying switch identification labels (lid, guid, switch name)", []string{"guid", "switch", "lid"}, nil),
+		Up: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "up"),
+			"1 if the latest perfquery scrape of this switch succeeded, 0 otherwise (timeout or error).", []string{"guid", "switch"}, nil),
 	}
 }
 
@@ -203,6 +206,7 @@ func (s *SwitchCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- s.RawRate
 	ch <- s.Uplink
 	ch <- s.Info
+	ch <- s.Up
 }
 
 func (s *SwitchCollector) Collect(ch chan<- prometheus.Metric) {
@@ -305,6 +309,10 @@ func (s *SwitchCollector) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(s.Duration, prometheus.GaugeValue, metric.duration, device.GUID, s.collector)
 			ch <- prometheus.MustNewConstMetric(s.Timeout, prometheus.GaugeValue, metric.timeout, device.GUID, s.collector)
 			ch <- prometheus.MustNewConstMetric(s.Error, prometheus.GaugeValue, metric.error, device.GUID, s.collector)
+			// up = 1 - (error || timeout). error and timeout are mutually exclusive
+			// in collect(), so summing then subtracting from 1 yields 0/1 cleanly.
+			up := 1 - metric.error - metric.timeout
+			ch <- prometheus.MustNewConstMetric(s.Up, prometheus.GaugeValue, up, device.GUID, device.Name)
 			for port, uplink := range device.Uplinks {
 				ch <- prometheus.MustNewConstMetric(s.Rate, prometheus.GaugeValue, uplink.Rate, device.GUID, port, device.Name)
 				ch <- prometheus.MustNewConstMetric(s.RawRate, prometheus.GaugeValue, uplink.RawRate, device.GUID, port, device.Name)

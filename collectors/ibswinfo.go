@@ -80,6 +80,7 @@ type IbswinfoCollector struct {
 	Temp                 *prometheus.Desc
 	FanStatus            *prometheus.Desc
 	FanRPM               *prometheus.Desc
+	Up                   *prometheus.Desc
 }
 
 type Ibswinfo struct {
@@ -127,29 +128,31 @@ func NewIbswinfoCollector(devices *[]InfinibandDevice, runonce bool, logger *slo
 		// label sets, which is invalid in client_golang and would fail
 		// MustRegister when both were enabled together.
 		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_duration_seconds"),
-			"Duration of collection", []string{"guid", "collector", "switch"}, nil),
+			"Time spent collecting metrics for this device, in seconds.", []string{"guid", "collector", "switch"}, nil),
 		Error: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_error"),
-			"Indicates if collect error", []string{"guid", "collector", "switch"}, nil),
+			"1 if the most recent collection for this device errored, 0 otherwise.", []string{"guid", "collector", "switch"}, nil),
 		Timeout: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_timeout"),
-			"Indicates if collect timeout", []string{"guid", "collector", "switch"}, nil),
+			"1 if the most recent collection for this device timed out, 0 otherwise.", []string{"guid", "collector", "switch"}, nil),
 		HardwareInfo: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "hardware_info"),
-			"Infiniband switch hardware info", []string{"guid", "firmware_version", "psid", "part_number", "serial_number", "switch"}, nil),
+			"Constant 1 carrying switch hardware identification labels (firmware version, PSID, part/serial numbers).", []string{"guid", "firmware_version", "psid", "part_number", "serial_number", "switch"}, nil),
 		Uptime: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "uptime_seconds"),
-			"Infiniband switch uptime in seconds", []string{"guid", "switch"}, nil),
+			"Switch firmware uptime in seconds since last reboot.", []string{"guid", "switch"}, nil),
 		PowerSupplyStatus: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_status_info"),
-			"Infiniband switch power supply status", []string{"guid", "psu", "status", "switch"}, nil),
+			"Constant 1 with the current PSU status string label (1 series per PSU per state).", []string{"guid", "psu", "status", "switch"}, nil),
 		PowerSupplyDCPower: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_dc_power_status_info"),
-			"Infiniband switch power supply DC power status", []string{"guid", "psu", "status", "switch"}, nil),
+			"Constant 1 with the current DC power status string label (1 series per PSU per state).", []string{"guid", "psu", "status", "switch"}, nil),
 		PowerSupplyFanStatus: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_fan_status_info"),
-			"Infiniband switch power supply fan status", []string{"guid", "psu", "status", "switch"}, nil),
+			"Constant 1 with the current PSU fan status string label (1 series per PSU per state).", []string{"guid", "psu", "status", "switch"}, nil),
 		PowerSupplyWatts: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "power_supply_watts"),
-			"Infiniband switch power supply watts", []string{"guid", "psu", "switch"}, nil),
+			"Power drawn by the PSU in watts.", []string{"guid", "psu", "switch"}, nil),
 		Temp: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "temperature_celsius"),
-			"Infiniband switch temperature celsius", []string{"guid", "switch"}, nil),
+			"Switch ASIC temperature in degrees Celsius.", []string{"guid", "switch"}, nil),
 		FanStatus: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "fan_status_info"),
-			"Infiniband switch fan status", []string{"guid", "status", "switch"}, nil),
+			"Constant 1 with the current overall fan status string label.", []string{"guid", "status", "switch"}, nil),
 		FanRPM: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "fan_rpm"),
-			"Infiniband switch fan RPM", []string{"guid", "fan", "switch"}, nil),
+			"Switch fan rotation speed in RPM (one series per fan).", []string{"guid", "fan", "switch"}, nil),
+		Up: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "up"),
+			"1 if the latest ibswinfo scrape of this switch succeeded, 0 otherwise (timeout or error).", []string{"guid", "switch"}, nil),
 	}
 }
 
@@ -166,6 +169,7 @@ func (s *IbswinfoCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- s.Temp
 	ch <- s.FanStatus
 	ch <- s.FanRPM
+	ch <- s.Up
 }
 
 func (s *IbswinfoCollector) Collect(ch chan<- prometheus.Metric) {
@@ -178,6 +182,8 @@ func (s *IbswinfoCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(s.Duration, prometheus.GaugeValue, swinfo.duration, swinfo.device.GUID, s.collector, swinfo.device.Name)
 		ch <- prometheus.MustNewConstMetric(s.Error, prometheus.GaugeValue, swinfo.error, swinfo.device.GUID, s.collector, swinfo.device.Name)
 		ch <- prometheus.MustNewConstMetric(s.Timeout, prometheus.GaugeValue, swinfo.timeout, swinfo.device.GUID, s.collector, swinfo.device.Name)
+		up := 1 - swinfo.error - swinfo.timeout
+		ch <- prometheus.MustNewConstMetric(s.Up, prometheus.GaugeValue, up, swinfo.device.GUID, swinfo.device.Name)
 		for _, psu := range swinfo.PowerSupplies {
 			if psu.Status != "" {
 				ch <- prometheus.MustNewConstMetric(s.PowerSupplyStatus, prometheus.GaugeValue, 1, swinfo.device.GUID, psu.ID, psu.Status, swinfo.device.Name)

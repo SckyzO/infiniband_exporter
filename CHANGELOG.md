@@ -1,3 +1,24 @@
+## 0.16.0 / 2026-04-29
+
+Prometheus naming and HELP cleanup; per-device `_up`. Last batch of breaking
+metric renames before v1.0.0.
+
+### ⚠️ Breaking — metric renames
+
+* `infiniband_switch_port_dli_mapping_errors_total` → `infiniband_switch_port_dlid_mapping_errors_total` (typo fix; same applies to the HCA collector).
+* `infiniband_hca_rate_bytes_per_second` → `infiniband_hca_port_rate_bytes_per_second` (matches the `port_*` namespace already used everywhere else and mirrors the switch-side name).
+* `infiniband_hca_raw_rate_bytes_per_second` → `infiniband_hca_port_raw_rate_bytes_per_second` (same reason).
+
+Update any dashboards/alerting rules referencing the old names. The `port_dli_mapping_errors_total` typo had been there since the upstream introduction of the metric.
+
+### Added
+
+* `infiniband_switch_up{guid, switch}`, `infiniband_hca_up{guid, hca}`, `infiniband_ibswinfo_up{guid, switch}`. Each emits `1` if the latest scrape of that device succeeded and `0` if it timed out or errored. These are the idiomatic Prometheus signal for per-device health and let alerting rules use the `up == 0` pattern. They complement the existing `_collect_error{guid}` / `_collect_timeout{guid}` series — those are kept for now to avoid forcing an alerting rewrite at the same time as everything else.
+
+### Changed — HELP texts
+
+Every metric's `# HELP` is now a description of *what is being measured* rather than the underlying perfquery / ibswinfo identifier name. Example: `port_link_downed_total` was `"Infiniband switch port LinkDownedCounter"`, it is now `"Times the link error recovery process failed and the link went down."`. `port_transmit_wait_total` is annotated as the primary congestion signal. The label sets are unchanged.
+
 ## 0.15.0 / 2026-04-29
 
 ibswinfo: parallelism + static-fields cache.
