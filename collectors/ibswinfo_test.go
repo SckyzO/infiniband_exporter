@@ -505,6 +505,58 @@ func TestIBSWInfoTimeout(t *testing.T) {
 	}
 }
 
+// resetIbswinfoStaticCache wipes the package-global cache so cache
+// tests do not pollute each other.
+func resetIbswinfoStaticCache() {
+	ibswinfoStaticCache.Range(func(k, _ any) bool {
+		ibswinfoStaticCache.Delete(k)
+		return true
+	})
+}
+
+// TestIbswinfoCollectorCacheSurvivesAcrossInstances mirrors how the
+// HTTP scrape handler drives the collector — setupGathers() builds a
+// fresh IbswinfoCollector on every request, so any per-instance cache
+// is reset each scrape. The static-fields cache must therefore live at
+// the package level. Regression test for a bug spotted during pre-1.0
+// real-fabric validation: with a per-instance cache, every scrape was
+// using the full ibswinfo output instead of the lighter `-o vitals`.
+func TestIbswinfoCollectorCacheSurvivesAcrossInstances(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=15m"}); err != nil {
+		t.Fatal(err)
+	}
+	resetIbswinfoStaticCache()
+	defer resetIbswinfoStaticCache()
+	var fullCalls, vitalsCalls atomic.Uint64
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
+		if vitals {
+			vitalsCalls.Add(1)
+			return ReadFixture("ibswinfo", "vitals1")
+		}
+		fullCalls.Add(1)
+		return ReadFixture("ibswinfo", "test1")
+	}
+	// First scrape: brand-new collector, cold cache — full call per device.
+	c1 := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
+	if _, err := testutil.GatherAndCount(setupGatherer(c1)); err != nil {
+		t.Fatal(err)
+	}
+	// Second scrape: NEW collector, mimicking what setupGathers does on
+	// every Prometheus HTTP request. Cache must survive — vitals path
+	// must be taken on every device.
+	c2 := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
+	if _, err := testutil.GatherAndCount(setupGatherer(c2)); err != nil {
+		t.Fatal(err)
+	}
+	want := uint64(len(switchDevices))
+	if got := fullCalls.Load(); got != want {
+		t.Errorf("Expected %d full calls (one per device on the cold scrape), got %d", want, got)
+	}
+	if got := vitalsCalls.Load(); got != want {
+		t.Errorf("Expected %d vitals calls on the second scrape (cache hit, package-level), got %d", want, got)
+	}
+}
+
 // TestParseIbswinfoVitals exercises the vitals-format parser against a
 // representative fixture (separator ":", different keys than the full
 // output). It does not exercise the cache merge path — that is covered
@@ -544,6 +596,8 @@ func TestIbswinfoCollectorCacheMissFull(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=15m"}); err != nil {
 		t.Fatal(err)
 	}
+	resetIbswinfoStaticCache()
+	defer resetIbswinfoStaticCache()
 	var fullCalls, vitalsCalls atomic.Uint64
 	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		if vitals {
@@ -573,6 +627,8 @@ func TestIbswinfoCollectorCacheHitVitals(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=15m"}); err != nil {
 		t.Fatal(err)
 	}
+	resetIbswinfoStaticCache()
+	defer resetIbswinfoStaticCache()
 	var fullCalls, vitalsCalls atomic.Uint64
 	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		if vitals {
@@ -620,6 +676,8 @@ func TestIbswinfoCollectorCacheExpired(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=10ms"}); err != nil {
 		t.Fatal(err)
 	}
+	resetIbswinfoStaticCache()
+	defer resetIbswinfoStaticCache()
 	var fullCalls atomic.Uint64
 	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		if !vitals {
@@ -650,6 +708,8 @@ func TestIbswinfoCollectorCacheDisabled(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
+	resetIbswinfoStaticCache()
+	defer resetIbswinfoStaticCache()
 	var fullCalls, vitalsCalls atomic.Uint64
 	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		if vitals {

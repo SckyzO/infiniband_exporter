@@ -90,3 +90,59 @@ Notable rules:
 * `infiniband:switch_port_ever_connected` — used by `IBSwitchPortDown`.
 
 See the comments in `infiniband_recording.yml` for the full list.
+
+## Adapt to your setup before deploying
+
+A few alerts encode assumptions about how Prometheus is configured. Read
+this section before importing.
+
+### `IBExporterDown` and the `job` label
+
+The default expression is `up{job=~".*infiniband.*"} == 0`. The regex
+matches any Prometheus job whose name contains the string `infiniband`
+— common names like `infiniband`, `infiniband-exporter`, `ib-fabric`
+are caught.
+
+If your job is named differently (e.g. just `ib`), edit the alert to
+use the exact label value:
+
+```yaml
+expr: up{job="ib"} == 0
+```
+
+### `IBSwitchPortDown` requires the recording rule **and** the flag
+
+This alert pairs `infiniband_switch_port_state == 0` with
+`infiniband:switch_port_ever_connected` (a recording rule that flips
+on once the port has been seen up). It needs **both**:
+
+* The exporter started with `--collector.switch.port-state` (otherwise
+  no `port_state` series at all).
+* `infiniband_recording.yml` loaded by Prometheus — without
+  `infiniband:switch_port_ever_connected` the right-hand side of the
+  `and` is empty and the alert never fires.
+
+If you forget either of these, alerts silently never trigger. There
+is no log message — that is the point of the design (no false
+positives on never-cabled ports), but it does mean you should sanity
+check by querying both names in Prometheus once during setup.
+
+### `IBExporterScrapeStale` only fires in runonce mode
+
+`infiniband_exporter_last_execution` is only exposed when the
+exporter runs as `--exporter.runonce`. In HTTP scrape mode the
+metric is absent, so `time() - last_execution > 300` evaluates to
+no data and the alert never fires.
+
+That is fine — in HTTP mode `IBExporterDown` covers the same
+failure (Prometheus can't scrape it). Keep both rules; they
+target different operational modes.
+
+### ibswinfo and node_exporter alerts
+
+* The environment alerts (`IBSwitchTempHigh`, `IBPSUFailure`,
+  `IBSwitchFanFailed`, …) require `--collector.ibswinfo`.
+* The `node_exporter`-driven combo dashboard requires
+  `node_exporter` ≥ 1.5 with `--collector.infiniband` enabled on the
+  same host. None of the exporter's *own* alerts depend on
+  `node_*` metrics — those are dashboard-only.

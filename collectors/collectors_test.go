@@ -124,13 +124,11 @@ func setupGatherer(collector prometheus.Collector) prometheus.Gatherer {
 	return gatherers
 }
 
-// TestCollectorsCoexist exercises a real-world configuration where every
-// collector is wired into the same registry. Before v0.13.0 the
-// IbswinfoCollector and the SwitchCollector both registered metrics
-// named infiniband_switch_collect_{duration_seconds,error,timeout} with
-// different label sets, which client_golang rejects at MustRegister
-// time. Renaming the ibswinfo metrics to the dedicated `ibswinfo`
-// subsystem fixes this; this test prevents the regression.
+// TestCollectorsCoexist regression test: every collector wired into a
+// single registry must coexist. Specifically, the ibswinfo and switch
+// collectors must not register descriptors under the same metric name
+// with different label sets — client_golang rejects that at
+// MustRegister time.
 func TestCollectorsCoexist(t *testing.T) {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler)))

@@ -5,8 +5,10 @@ standard `infiniband-diags` tools (`ibnetdiscover`, `perfquery`) and the
 optional `ibswinfo` helper for unmanaged switches. Exposes them on a
 `/metrics` endpoint suitable for Prometheus.
 
-> Independent fork of [`treydock/infiniband_exporter`](https://github.com/treydock/infiniband_exporter).
-> See [`CHANGELOG.md`](CHANGELOG.md) for the divergence history.
+> **Status: stable** (1.0.0). Independent fork of
+> [`treydock/infiniband_exporter`](https://github.com/treydock/infiniband_exporter).
+> See [`CHANGELOG.md`](CHANGELOG.md) for the divergence history and the
+> stability commitment.
 
 ## Quick start
 

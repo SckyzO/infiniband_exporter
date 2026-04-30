@@ -6,6 +6,12 @@
 /coverage.html
 /coverage.txt
 
+# Outputs of scripts/testing/test_ib.sh — only relevant when the harness
+# is run from /tmp/test_ib/ (the documented location), but defensive in
+# case someone runs it inside a clone.
+scripts/testing/work/
+scripts/testing/output.log
+
 # Local-only: agent guidance/settings, never committed.
 CLAUDE.md
 .claude/

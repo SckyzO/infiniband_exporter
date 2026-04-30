@@ -1,3 +1,95 @@
+## 1.0.0 / 2026-04-30
+
+First stable release of the SckyzO fork. No new features over v0.19.0
+— this tag is the polish pass: PromQL audit, comment dégraissage,
+documentation review, dependency tidy.
+
+### Stability commitment from 1.0 onward
+
+* Metric names, label sets, and exit code semantics are part of the
+  stable surface. Breaking changes will go through a deprecation
+  cycle of at least one minor release.
+* Flags follow the same rule. New optional flags are non-breaking;
+  removing or reshaping an existing one will be flagged in the
+  changelog and announced one minor in advance.
+* `examples/grafana/*.json` and `examples/prometheus/rules/*.yml`
+  are best-effort references; their content can shift between
+  releases without a deprecation cycle. See [docs/dashboards.md](docs/dashboards.md).
+
+### Changes since 0.19.0
+
+* **Bug fix** — `ibswinfo` static-fields cache is now package-global.
+  Previously it was a `sync.Map` field on `IbswinfoCollector`. Each
+  Prometheus HTTP scrape rebuilds the collector via `setupGathers()`,
+  so the per-instance cache was wiped every scrape and the
+  `--ibswinfo.static-cache-ttl` knob effectively did nothing — the
+  full `ibswinfo -d lid-X` was issued on every scrape regardless of
+  TTL. Spotted during pre-1.0 fabric validation; the warm-scrape
+  `power_supply_status_info` series (which only exist in the full
+  output, not in `-o vitals`) gave it away. The cache now lives at
+  the package level (mirrors `ibnetdiscoverCache`). New regression
+  test `TestIbswinfoCollectorCacheSurvivesAcrossInstances` exercises
+  two consecutive collector instances sharing the cache.
+* PromQL audit pass on every recording rule, alert rule, and
+  dashboard target. `promtool check rules` is clean. Every
+  `infiniband_*` reference has a producer in the code; every
+  `node_infiniband_*` reference matches `node_exporter` ≥ 1.5.
+* `docs/alerts.md` extended with an "Adapt to your setup" section
+  that documents three caveats found during the audit:
+  - `IBExporterDown` regex must be tuned to your `job` label
+  - `IBSwitchPortDown` requires both `--collector.switch.port-state`
+    **and** the recording rules loaded
+  - `IBExporterScrapeStale` only fires in `--exporter.runonce` mode
+* Code comments tightened. Removed dated "in v0.X.Y" / "before
+  v0.X.Y" wording where the documented behaviour is now stable.
+* `go mod tidy` clean — no stale dependencies left over from the
+  pre-1.0 churn.
+
+### Tooling
+
+* Containers in `Makefile` (build / test / lint / release) now run
+  with `--user $(id -u):$(id -g)`, with `HOME` redirected to a
+  writable bind-mount and `GOMODCACHE` / `GOCACHE` /
+  `GOLANGCI_LINT_CACHE` exported accordingly. Artifacts (`dist/`,
+  `infiniband_exporter`, `.build/cache/...`) are owned by the user
+  who invoked `make`, not `root`.
+* `scripts/testing/test_ib.sh` — fabric-side validation harness
+  used during pre-release. Drives nine numbered tests against a
+  real exporter binary, including cache-hit verification (warm
+  scrape must drop status fields), runonce mode, and a one-liner
+  latency comparison summary. Documented under
+  [`scripts/testing/README.md`](scripts/testing/README.md). Not
+  wired into CI — it needs real IB hardware.
+
+### Highlights of the divergence from upstream
+
+For anyone arriving from `treydock/infiniband_exporter` 0.10.0, the
+shape of the tree they see at 1.0:
+
+* Container-only build pipeline (Makefile + GitHub Actions +
+  GoReleaser, no CircleCI / promu / Makefile.common).
+* Go 1.26 + `log/slog` + `prometheus/common/promslog`.
+* `--collector.switch.port-state`, `--ibnetdiscover.cache-ttl`,
+  `--ibswinfo.static-cache-ttl` flags. Default
+  `--ibswinfo.max-concurrent` raised to 4.
+* Per-device `infiniband_*_up` gauges; `_collect_error` /
+  `_collect_timeout` kept for transition.
+* `infiniband_ibswinfo_collect_*` carved out from
+  `infiniband_switch_collect_*` (label-set conflict fix).
+* `port_dlid_mapping_errors_total` typo fixed; `hca_rate_*` moved
+  to the `port_*` namespace for symmetry with the switch side.
+* Race-free counters, surfaced stderr from ibnetdiscover/perfquery,
+  per-iteration cancel of rcv-err contexts.
+* `examples/grafana/`: six dashboards for Grafana 10+ (with
+  `__inputs` / `__requires` so they import directly and publish on
+  grafana.com), including a combo dashboard for management nodes.
+* `scripts/anonymize.sh` + `scripts/capture-fixtures.sh` for safe
+  bug reporting.
+* `docs/{operations,metrics,alerts,dashboards}.md` and
+  `CONTRIBUTING.md`.
+
+The full per-lot trail is below.
+
 ## 0.19.0 / 2026-04-30
 
 Alerting, dashboards, documentation. Last feature lot before v1.0.0.

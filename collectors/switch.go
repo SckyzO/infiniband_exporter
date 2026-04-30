@@ -31,14 +31,9 @@ var (
 	CollectSwitch       = kingpin.Flag("collector.switch", "Enable the switch collector").Default("true").Bool()
 	switchCollectBase   = kingpin.Flag("collector.switch.base-metrics", "Collect base metrics").Default("true").Bool()
 	switchCollectRcvErr = kingpin.Flag("collector.switch.rcv-err-details", "Collect Rcv Error Details").Default("false").Bool()
-	// When a port link goes down, ibnetdiscover marks it `???`. By default
-	// the parser drops those lines, so the corresponding metrics simply
-	// disappear and Prometheus alerting on "port down" has to rely on
-	// fragile `absent()` / `last_over_time` recipes. Enabling this flag
-	// makes the parser keep those ports and exposes them as
-	// infiniband_switch_port_state{guid, switch, port} = 0 (vs 1 for up
-	// ports), so `port_state == 0` is the natural alerting predicate.
-	// Original idea: upstream PR #37 (metfan1981).
+	// Persistent port-state series so alerts can use `port_state == 0`
+	// instead of the fragile `absent()` recipes that disappearing
+	// metrics force. Adapted from upstream PR #37 (metfan1981).
 	switchCollectPortState = kingpin.Flag("collector.switch.port-state", "Report port link state (1=up, 0=down) on infiniband_switch_port_state").Default("false").Bool()
 )
 

@@ -35,16 +35,13 @@ var (
 	CollectIbswinfo = kingpin.Flag("collector.ibswinfo", "Enable ibswinfo data collection (BETA)").Default("false").Bool()
 	ibswinfoPath    = kingpin.Flag("ibswinfo.path", "Path to ibswinfo").Default("ibswinfo").String()
 	ibswinfoTimeout = kingpin.Flag("ibswinfo.timeout", "Timeout for ibswinfo execution").Default("10s").Duration()
-	// Bumped from 1 to 4 in v0.15.0. On a 23-switch HDR400 fabric the
-	// sequential scrape was ~32 s (1.4 s per call); 4 in flight cuts that
-	// to ~8 s without saturating the SMA on the switches.
+	// ibswinfo is ~1.4 s per switch on HDR fabrics; 4 in flight is the
+	// observed sweet spot (~4× faster) before the SMA starts contending.
 	ibswinfoMaxConcurrent = kingpin.Flag("ibswinfo.max-concurrent", "Max number of concurrent ibswinfo executions").Default("4").Int()
-	// Cache of static fields (PartNumber, SerialNumber, PSID, FirmwareVersion)
-	// keyed by GUID. While the entry is fresh, the collector calls
-	// `ibswinfo -o vitals` (faster, only dynamic registers MGIR/MGPIR/MSPS/
-	// MTMP/MFCR) and merges the cached static values back. A TTL of 0
-	// disables the cache and always issues full `ibswinfo -d lid-X` calls
-	// — matches the pre-v0.15.0 behaviour exactly.
+	// While the static-field cache is fresh, scrapes use the lighter
+	// `ibswinfo -o vitals` mode (dynamic registers only) and merge the
+	// cached PartNumber / SerialNumber / PSID / FirmwareVersion back in.
+	// 0 disables the optimization.
 	ibswinfoStaticCacheTTL                  = kingpin.Flag("ibswinfo.static-cache-ttl", "TTL for caching static ibswinfo fields. 0 disables the cache.").Default("15m").Duration()
 	IbswinfoExec           IbswinfoExecFunc = ibswinfo
 )
@@ -63,11 +60,16 @@ type ibswinfoCacheEntry struct {
 	lastRefresh     time.Time
 }
 
+// ibswinfoStaticCache is a package-global keyed by GUID. It survives
+// between setupGathers() invocations — Prometheus's HTTP handler
+// re-builds an IbswinfoCollector on every scrape, so per-instance
+// state is reset each time. ibnetdiscoverCache uses the same pattern.
+var ibswinfoStaticCache sync.Map // map[guid]ibswinfoCacheEntry
+
 type IbswinfoCollector struct {
 	devices              *[]InfinibandDevice
 	logger               *slog.Logger
 	collector            string
-	staticCache          sync.Map // map[guid]ibswinfoCacheEntry
 	Duration             *prometheus.Desc
 	Error                *prometheus.Desc
 	Timeout              *prometheus.Desc
@@ -121,12 +123,8 @@ func NewIbswinfoCollector(devices *[]InfinibandDevice, runonce bool, logger *slo
 		devices:   devices,
 		logger:    logger.With("collector", collector),
 		collector: collector,
-		// Distinct subsystem ("ibswinfo" vs "switch") so the metric
-		// fqname does not collide with the SwitchCollector's
-		// infiniband_switch_collect_* metrics. Before this change the
-		// two collectors registered the same metric name with different
-		// label sets, which is invalid in client_golang and would fail
-		// MustRegister when both were enabled together.
+		// "ibswinfo" subsystem (not "switch") so these descriptors do not
+		// collide with SwitchCollector when both are registered.
 		Duration: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_duration_seconds"),
 			"Time spent collecting metrics for this device, in seconds.", []string{"guid", "collector", "switch"}, nil),
 		Error: prometheus.NewDesc(prometheus.BuildFQName(namespace, "ibswinfo", "collect_error"),
@@ -226,7 +224,7 @@ func (s *IbswinfoCollector) useVitalsForGUID(guid string) (ibswinfoCacheEntry, b
 	if ttl <= 0 {
 		return ibswinfoCacheEntry{}, false
 	}
-	v, ok := s.staticCache.Load(guid)
+	v, ok := ibswinfoStaticCache.Load(guid)
 	if !ok {
 		return ibswinfoCacheEntry{}, false
 	}
@@ -282,7 +280,7 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 				} else {
 					parseErr = parse_ibswinfo(ibswinfoOut, &ibswinfoData, s.logger)
 					if parseErr == nil && *ibswinfoStaticCacheTTL > 0 {
-						s.staticCache.Store(device.GUID, ibswinfoCacheEntry{
+						ibswinfoStaticCache.Store(device.GUID, ibswinfoCacheEntry{
 							PartNumber:      ibswinfoData.PartNumber,
 							SerialNumber:    ibswinfoData.SerialNumber,
 							PSID:            ibswinfoData.PSID,

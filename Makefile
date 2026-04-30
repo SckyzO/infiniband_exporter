@@ -11,20 +11,42 @@ DOCKER       ?= docker
 PKG          ?= ./...
 BIN          ?= infiniband_exporter
 
-# Mount the working tree, persist module + build caches under .build/cache so
-# repeat runs don't pay the dependency download tax.
+# Run containers as the host user so artifacts (binary, dist/, cache) are
+# owned by you, not root. HOME is redirected to a writable mount and the
+# Go / golangci caches are anchored there too — none of them rely on
+# `/root/.cache/...` which non-root users can't write to.
+USER_ID := $(shell id -u)
+GROUP_ID := $(shell id -g)
+
+# Mount the working tree, persist module + build caches under .build/cache
+# so repeat runs don't pay the dependency download tax.
 RUN_GO = $(DOCKER) run --rm \
+	--user $(USER_ID):$(GROUP_ID) \
 	-v "$(CURDIR)":/src \
-	-v "$(CURDIR)/.build/cache/go-mod":/go/pkg/mod \
-	-v "$(CURDIR)/.build/cache/go-build":/root/.cache/go-build \
+	-v "$(CURDIR)/.build/cache/go-mod":/tmp/gomodcache \
+	-v "$(CURDIR)/.build/cache/go-build":/tmp/gocache \
+	-e HOME=/tmp \
+	-e GOMODCACHE=/tmp/gomodcache \
+	-e GOCACHE=/tmp/gocache \
 	-w /src \
 	$(GO_IMAGE)
 
 RUN_LINT = $(DOCKER) run --rm \
+	--user $(USER_ID):$(GROUP_ID) \
 	-v "$(CURDIR)":/src \
-	-v "$(CURDIR)/.build/cache/golangci":/root/.cache/golangci-lint \
+	-v "$(CURDIR)/.build/cache/golangci":/tmp/golangci-cache \
+	-v "$(CURDIR)/.build/cache/go-mod":/tmp/gomodcache \
+	-v "$(CURDIR)/.build/cache/go-build":/tmp/gocache \
+	-e HOME=/tmp \
+	-e GOLANGCI_LINT_CACHE=/tmp/golangci-cache \
+	-e GOMODCACHE=/tmp/gomodcache \
+	-e GOCACHE=/tmp/gocache \
 	-w /src \
 	$(LINT_IMAGE)
+
+# Caches must exist before the first container run, otherwise the bind
+# mounts create them as root.
+$(shell mkdir -p .build/cache/go-mod .build/cache/go-build .build/cache/golangci 2>/dev/null)
 
 .PHONY: all
 all: fmt-check vet test lint build
@@ -69,13 +91,20 @@ tidy:
 .PHONY: release-snapshot
 release-snapshot:
 	$(DOCKER) run --rm \
+		--user $(USER_ID):$(GROUP_ID) \
 		-v "$(CURDIR)":/src \
+		-v "$(CURDIR)/.build/cache/go-mod":/tmp/gomodcache \
+		-v "$(CURDIR)/.build/cache/go-build":/tmp/gocache \
+		-e HOME=/tmp \
+		-e GOMODCACHE=/tmp/gomodcache \
+		-e GOCACHE=/tmp/gocache \
 		-w /src \
 		$(RELEASE_IMAGE) release --snapshot --clean
 
 .PHONY: release-check
 release-check:
 	$(DOCKER) run --rm \
+		--user $(USER_ID):$(GROUP_ID) \
 		-v "$(CURDIR)":/src \
 		-w /src \
 		$(RELEASE_IMAGE) check
