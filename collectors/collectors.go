@@ -48,13 +48,17 @@ var (
 		"Last execution time of exporter", []string{"collector"}, nil)
 )
 
+// ReadFixture loads a captured tool output stored under
+// collectors/testdata/<outputType>/<name>.out. Using the magic Go
+// "testdata" directory name keeps the files out of `go build` and
+// `go vet` scans.
 func ReadFixture(outputType string, name string) (string, error) {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
 	if filepath.Base(dir) != "collectors" {
 		dir = filepath.Join(dir, "collectors")
 	}
-	fixtureDir := filepath.Join(dir, "fixtures", outputType)
+	fixtureDir := filepath.Join(dir, "testdata", outputType)
 	fixture := filepath.Join(fixtureDir, fmt.Sprintf("%s.out", name))
 	buffer, err := os.ReadFile(fixture)
 	if err != nil {

@@ -1,3 +1,32 @@
+## 0.18.0 / 2026-04-30
+
+Test fixtures: convention rename + anonymization tooling + end-to-end test.
+No runtime behaviour changes.
+
+### Changed
+
+* `collectors/fixtures/` renamed to `collectors/testdata/`. The Go toolchain
+  recognizes `testdata` as a magic directory and skips it during `go build`,
+  `go vet`, and most other walks. `ReadFixture` was updated to match.
+
+### Added
+
+* `scripts/anonymize.sh` — strip operational identifiers (GUIDs, switch /
+  HCA names, MAC addresses) from `ibnetdiscover -p` and `perfquery -G ... -x`
+  output before committing it as a fixture. Replacements are stable inside
+  one invocation so the topology relations encoded in the input file are
+  preserved.
+* `scripts/capture-fixtures.sh` — capture raw `ibnetdiscover` and
+  `perfquery` output from a fabric host. Pipe the result through
+  `anonymize.sh` before committing under `collectors/testdata/integration/`.
+* `scripts/README.md` documents both scripts and explicitly covers the
+  bug-reporting workflow: a user opening an issue can capture, anonymize,
+  and attach a reproducer without leaking their fabric topology.
+* New `TestEndToEndPipeline` drives the parsing and emission pipeline
+  through the existing fixtures. Asserts the expected metric families
+  (`infiniband_switch_info`, `infiniband_*_up`, …) appear when every
+  collector is wired into the same registry.
+
 ## 0.17.0 / 2026-04-29
 
 Internal refactor: switch / HCA factorization, ibnetdiscover topology cache.

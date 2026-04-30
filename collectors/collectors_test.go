@@ -24,6 +24,7 @@ import (
 
 	"log/slog"
 
+	kingpin "github.com/alecthomas/kingpin/v2"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -135,4 +136,64 @@ func TestCollectorsCoexist(t *testing.T) {
 	registry.MustRegister(NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler)))
 	registry.MustRegister(NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler)))
 	registry.MustRegister(NewHCACollector(&switchDevices, false, slog.New(slog.DiscardHandler)))
+}
+
+// TestEndToEndPipeline drives the whole collection pipeline through the
+// fixture-backed mocks: parse `ibnetdiscover` output, build the device
+// list, and let SwitchCollector and HCACollector emit metrics by reading
+// back-mocked `perfquery` output. It does not assert the exact metric
+// values (those are covered by the per-collector tests); it asserts the
+// pipeline produces a non-trivial number of samples without errors and
+// with the expected metric families. This is the contract a reader of
+// /metrics actually relies on.
+func TestEndToEndPipeline(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0", "--ibnetdiscover.cache-ttl=0"}); err != nil {
+		t.Fatal(err)
+	}
+	resetIbnetdiscoverCache()
+	SetIbnetdiscoverExec(t, false, false)
+	SetPerfqueryExecs(t, false, false)
+
+	disco := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
+	switches, hcas, err := disco.GetPorts()
+	if err != nil {
+		t.Fatalf("GetPorts: %s", err)
+	}
+	if len(*switches) == 0 || len(*hcas) == 0 {
+		t.Fatalf("topology empty: %d switches, %d hcas", len(*switches), len(*hcas))
+	}
+
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(disco)
+	registry.MustRegister(NewSwitchCollector(switches, false, slog.New(slog.DiscardHandler)))
+	registry.MustRegister(NewHCACollector(hcas, false, slog.New(slog.DiscardHandler)))
+
+	mfs, err := registry.Gather()
+	if err != nil {
+		t.Fatalf("Gather: %s", err)
+	}
+	if len(mfs) == 0 {
+		t.Fatal("registry produced no metric families")
+	}
+
+	// Spot-check that the headline metric families show up. If any of
+	// these are missing the integration is broken even if individual
+	// per-collector tests pass.
+	want := []string{
+		"infiniband_switch_info",
+		"infiniband_switch_up",
+		"infiniband_switch_port_transmit_data_bytes_total",
+		"infiniband_hca_info",
+		"infiniband_hca_up",
+		"infiniband_hca_port_transmit_data_bytes_total",
+	}
+	got := make(map[string]bool, len(mfs))
+	for _, mf := range mfs {
+		got[mf.GetName()] = true
+	}
+	for _, name := range want {
+		if !got[name] {
+			t.Errorf("integration: missing metric family %q", name)
+		}
+	}
 }
