@@ -64,6 +64,12 @@ type InfinibandDevice struct {
 	Name    string
 	Uplinks map[string]InfinibandUplink
 	Switch  string
+	// DownPorts lists the local port numbers ibnetdiscover marked `???`.
+	// Populated only when --collector.switch.port-state is enabled; the
+	// SwitchCollector emits `infiniband_switch_port_state{port=...} 0`
+	// for each entry so alerts can rely on a persistent series instead
+	// of `absent()`.
+	DownPorts []string
 }
 
 type InfinibandUplink struct {
@@ -173,7 +179,30 @@ func ibnetdiscoverParse(out string, logger *slog.Logger) (*[]InfinibandDevice, *
 			continue
 		}
 		if items[5] == "???" {
-			logger.Debug("Skipping line that is not connected", "line", line)
+			if !*switchCollectPortState {
+				logger.Debug("Skipping line that is not connected", "line", line)
+				continue
+			}
+			// Keep the device entry so SwitchCollector can emit a 0-valued
+			// port_state series for the down port. We need only enough info
+			// to identify the device (type + GUID) and the local port.
+			guid := items[3]
+			portNumber := items[2]
+			device, ok := devices[guid]
+			if !ok {
+				device.Uplinks = make(map[string]InfinibandUplink)
+			}
+			device.Type = items[0]
+			device.LID = items[1]
+			device.GUID = guid
+			// Parse the device name if it is present (between quotes); a
+			// down port may have no parseable name on some firmware
+			// versions, so failure here is benign.
+			if portName, _, err := parseNames(line); err == nil {
+				device.Name = portName
+			}
+			device.DownPorts = append(device.DownPorts, portNumber)
+			devices[guid] = device
 			continue
 		}
 		// check the last item, because name may have space so that it is split into multiple items

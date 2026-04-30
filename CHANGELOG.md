@@ -1,3 +1,26 @@
+## 0.19.0 / 2026-04-30
+
+Alerting, dashboards, documentation. Last feature lot before v1.0.0.
+
+### Added
+
+* `--collector.switch.port-state` (default `false`): exposes `infiniband_switch_port_state{guid, switch, port}` gauge (1 = up, 0 = down). When enabled, the parser keeps `???` lines from `ibnetdiscover` instead of dropping them, so port-down alerts can rely on `port_state == 0` instead of fragile `absent()` recipes. Imported and adapted from upstream PR #37 (metfan1981).
+* `examples/prometheus/rules/infiniband_recording.yml`: recording rules for byte/packet/error rates per port, per switch, and fabric-wide; plus the `infiniband:switch_port_ever_connected` predicate the `IBSwitchPortDown` alert depends on.
+* `examples/prometheus/rules/infiniband_alerts.yml`: alert catalogue grouped by exporter health, fabric health, errors, and environment (PSU / fan / temperature). Severity tiers follow Prometheus alerting docs.
+* `examples/grafana/`: six dashboards in Grafana 10+ format with `__inputs` / `__requires` (importable directly, publishable on grafana.com):
+  - `infiniband-fabric-overview-small.json` (≤40 switches, per-switch lines)
+  - `infiniband-fabric-overview-large.json` (40+ switches, heatmap + topk + min/avg/max)
+  - `infiniband-switch-detail.json` and `infiniband-hca-detail.json` for drill-down
+  - `infiniband-exporter-internals.json` for the exporter's own health
+  - `infiniband_and_node_exporter.json` — combo dashboard for management nodes that run both exporters together (load, CPU, memory, FS, IB driver counters, scrape latency)
+* `docs/operations.md`, `docs/metrics.md`, `docs/alerts.md`, `docs/dashboards.md`: operational guide, metric reference, alert walkthrough, dashboard install.
+* `CONTRIBUTING.md`: dev workflow, conventions, release process.
+
+### Changed
+
+* `README.md` rewritten around quick-start / endpoints / collectors / configuration / docs sections. Removed the upstream-style multi-paragraph install procedure; refer to `docs/operations.md` instead.
+* `examples/grafana-ib-fabric-{health,perf}.json` and `examples/infiniband.rules` removed in favour of the new `examples/grafana/` and `examples/prometheus/` layouts. The new dashboards keep the most useful upstream panels (top congested switches, top by packet rate, failed PSUs/fans) and add several new ones (fabric Tx/Rx aggregate, hardware inventory, port_state table).
+
 ## 0.18.0 / 2026-04-30
 
 Test fixtures: convention rename + anonymization tooling + end-to-end test.

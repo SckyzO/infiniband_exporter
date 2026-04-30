@@ -1,0 +1,140 @@
+{
+  "__inputs": [
+    {"name": "DS_PROMETHEUS", "label": "Prometheus", "description": "Prometheus data source scraping infiniband_exporter.", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus"}
+  ],
+  "__elements": {},
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0"},
+    {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "timeseries", "name": "Time series", "version": ""},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "Per-switch view of an InfiniBand fabric — throughput, errors, congestion, environment.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [{"title": "Fabric overview", "url": "/d/ib-fabric-overview", "type": "dashboards", "tags": ["infiniband"]}],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Up",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_up{switch=\"$switch\"}", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "auto", "colorMode": "value", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "mappings": [{"type": "value", "options": {"0": {"text": "DOWN"}, "1": {"text": "UP"}}}]}, "overrides": []}
+    },
+    {
+      "id": 2, "type": "stat", "title": "Uptime",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_uptime_seconds{switch=\"$switch\"}", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "auto", "colorMode": "value", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"unit": "s", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []}
+    },
+    {
+      "id": 3, "type": "stat", "title": "Temperature",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_temperature_celsius{switch=\"$switch\"}", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "auto", "colorMode": "value", "graphMode": "area"},
+      "fieldConfig": {"defaults": {"unit": "celsius", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}, "overrides": []}
+    },
+    {
+      "id": 4, "type": "stat", "title": "Tx",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total{switch=\"$switch\"}[5m]))", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "auto", "colorMode": "value", "graphMode": "area"},
+      "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []}
+    },
+    {
+      "id": 5, "type": "stat", "title": "Rx",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total{switch=\"$switch\"}[5m]))", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "auto", "colorMode": "value", "graphMode": "area"},
+      "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []}
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Per-port throughput",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(infiniband_switch_port_transmit_data_bytes_total{switch=\"$switch\"}[5m])", "legendFormat": "port {{port}} Tx", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(infiniband_switch_port_receive_data_bytes_total{switch=\"$switch\"}[5m])", "legendFormat": "port {{port}} Rx", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
+      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Errors per port (rate 5m, non-zero only)",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(infiniband_switch_port_symbol_error_total{switch=\"$switch\"}[5m]) > 0", "legendFormat": "port {{port}} symbol", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(infiniband_switch_port_link_downed_total{switch=\"$switch\"}[5m]) > 0", "legendFormat": "port {{port}} link_downed", "refId": "B"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(infiniband_switch_port_receive_errors_total{switch=\"$switch\"}[5m]) > 0", "legendFormat": "port {{port}} rcv", "refId": "C"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(infiniband_switch_port_transmit_discards_total{switch=\"$switch\"}[5m]) > 0", "legendFormat": "port {{port}} discards", "refId": "D"}
+      ],
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
+      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Congestion (PortXmitWait rate)",
+      "description": "Ticks during which the port had data to transmit but no flow-control credits available — primary congestion signal.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(infiniband_switch_port_transmit_wait_total{switch=\"$switch\"}[5m])", "legendFormat": "port {{port}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
+      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "PSU power draw",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_power_supply_watts{switch=\"$switch\"}", "legendFormat": "PSU {{psu}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "watt", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
+      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "none"}}
+    },
+    {
+      "id": 10, "type": "table", "title": "Port state",
+      "description": "1 = link up, 0 = link down. Requires --collector.switch.port-state.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_port_state{switch=\"$switch\"}", "instant": true, "format": "table", "refId": "A"}],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "instance": true, "job": true, "guid": true}}}],
+      "options": {"showHeader": true, "footer": {"show": false}}
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["infiniband", "switch"],
+  "templating": {
+    "list": [
+      {
+        "name": "switch",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+        "query": {"query": "label_values(infiniband_switch_info, switch)", "refId": "StandardVariableQuery"},
+        "refresh": 1,
+        "label": "Switch",
+        "sort": 1,
+        "current": {"selected": false, "text": "", "value": ""},
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      }
+    ]
+  },
+  "time": {"from": "now-3h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "InfiniBand — Switch detail",
+  "uid": null,
+  "version": 1,
+  "weekStart": ""
+}

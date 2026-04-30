@@ -1,0 +1,90 @@
+# Recording rules for infiniband_exporter.
+#
+# These pre-compute the rates dashboards and alerts depend on, so the
+# heavy lifting happens once at evaluation time rather than for every
+# query. Drop into your Prometheus rule_files directory.
+#
+# Convention: recording rules use the metric:scope:operation pattern.
+# Aggregation drops the high-cardinality `port` label except where
+# explicitly retained.
+
+groups:
+  - name: infiniband.port.rates
+    interval: 1m
+    rules:
+      # Per-port byte rates. Used by the fabric overview dashboard
+      # (top-N talkers) and the switch detail view.
+      - record: infiniband:switch_port_transmit_bytes:rate5m
+        expr: rate(infiniband_switch_port_transmit_data_bytes_total[5m])
+      - record: infiniband:switch_port_receive_bytes:rate5m
+        expr: rate(infiniband_switch_port_receive_data_bytes_total[5m])
+      - record: infiniband:hca_port_transmit_bytes:rate5m
+        expr: rate(infiniband_hca_port_transmit_data_bytes_total[5m])
+      - record: infiniband:hca_port_receive_bytes:rate5m
+        expr: rate(infiniband_hca_port_receive_data_bytes_total[5m])
+
+      # Aggregate per switch — one series per switch, sum across all
+      # its ports. Useful for capacity dashboards.
+      - record: infiniband:switch_transmit_bytes:rate5m
+        expr: sum without (port) (infiniband:switch_port_transmit_bytes:rate5m)
+      - record: infiniband:switch_receive_bytes:rate5m
+        expr: sum without (port) (infiniband:switch_port_receive_bytes:rate5m)
+
+      # Whole-fabric totals.
+      - record: infiniband:fabric_transmit_bytes:rate5m
+        expr: sum(infiniband:switch_transmit_bytes:rate5m)
+      - record: infiniband:fabric_receive_bytes:rate5m
+        expr: sum(infiniband:switch_receive_bytes:rate5m)
+
+  - name: infiniband.port.errors
+    interval: 1m
+    rules:
+      # Headline error rates per port. The list mirrors the IB
+      # Performance Management spec's "errors that page" set; if you
+      # need finer granularity, build derived rules off the raw
+      # _total counters.
+      - record: infiniband:switch_port_symbol_errors:rate5m
+        expr: rate(infiniband_switch_port_symbol_error_total[5m])
+      - record: infiniband:switch_port_link_downed:rate5m
+        expr: rate(infiniband_switch_port_link_downed_total[5m])
+      - record: infiniband:switch_port_link_recovery:rate5m
+        expr: rate(infiniband_switch_port_link_error_recovery_total[5m])
+      - record: infiniband:switch_port_receive_errors:rate5m
+        expr: rate(infiniband_switch_port_receive_errors_total[5m])
+      - record: infiniband:switch_port_transmit_discards:rate5m
+        expr: rate(infiniband_switch_port_transmit_discards_total[5m])
+      # Congestion: PortXmitWait increments are the canonical signal.
+      - record: infiniband:switch_port_xmit_wait:rate5m
+        expr: rate(infiniband_switch_port_transmit_wait_total[5m])
+
+      # Total errors per port (any cause). Lets dashboards rank ports
+      # by combined error pressure without listing every individual
+      # counter.
+      - record: infiniband:switch_port_total_errors:rate5m
+        expr: |
+          rate(infiniband_switch_port_symbol_error_total[5m])
+          + rate(infiniband_switch_port_link_downed_total[5m])
+          + rate(infiniband_switch_port_link_error_recovery_total[5m])
+          + rate(infiniband_switch_port_receive_errors_total[5m])
+          + rate(infiniband_switch_port_receive_remote_physical_errors_total[5m])
+          + rate(infiniband_switch_port_local_link_integrity_errors_total[5m])
+          + rate(infiniband_switch_port_excessive_buffer_overrun_errors_total[5m])
+          + rate(infiniband_switch_port_transmit_discards_total[5m])
+
+  - name: infiniband.fabric.health
+    interval: 1m
+    rules:
+      # Switch availability viewed from the exporter's collect loop.
+      # 1 if the most recent perfquery succeeded, 0 otherwise.
+      # Fold into a fabric-level "fraction of switches up" gauge —
+      # useful for SLO tracking.
+      - record: infiniband:switches_up:ratio
+        expr: avg(infiniband_switch_up)
+      - record: infiniband:hcas_up:ratio
+        expr: avg(infiniband_hca_up)
+
+      # Persistent "this port has ever been seen up". Pairs with
+      # port_state == 0 in alerts so we do not page on a port that
+      # has never been wired (it stays at 0 forever).
+      - record: infiniband:switch_port_ever_connected
+        expr: max_over_time(infiniband_switch_port_state[7d]) == 1

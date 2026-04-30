@@ -1,127 +1,137 @@
 # InfiniBand Prometheus exporter
 
-> Independent fork of [`treydock/infiniband_exporter`](https://github.com/treydock/infiniband_exporter), maintained at `github.com/SckyzO/infiniband_exporter`. See `CHANGELOG.md` for the divergence history.
+Collects per-port counters from InfiniBand switches and HCAs through the
+standard `infiniband-diags` tools (`ibnetdiscover`, `perfquery`) and the
+optional `ibswinfo` helper for unmanaged switches. Exposes them on a
+`/metrics` endpoint suitable for Prometheus.
 
-The InfiniBand exporter collects counters from InfiniBand switches and HCAs.
-The exporter supports the `/metrics` endpoint to gather InfiniBand metrics and metrics about the exporter.
+> Independent fork of [`treydock/infiniband_exporter`](https://github.com/treydock/infiniband_exporter).
+> See [`CHANGELOG.md`](CHANGELOG.md) for the divergence history.
 
-This exporter must be run on a host that has an active interface on the InfiniBand fabric you wish to monitor.
-By default this exporter will collect counters from all switch ports on the fabric connected to the host running this exporter.
+## Quick start
 
-The InfiniBand diagnostic tools of `ibnetdiscover` and `perfquery` must also be present on the host running this exporter.
-These are commonly installed via the `infiniband-diags` package.
+1. Install the InfiniBand diagnostic tools on the host that runs the
+   exporter (`infiniband-diags`, plus `ibswinfo` if you intend to scrape
+   unmanaged switches).
+2. Make sure that host has at least one active fabric link.
+3. Drop the `infiniband_exporter` binary in `/usr/local/bin/`.
+4. Either install the systemd unit from `systemd/infiniband_exporter@.service`,
+   or run the binary directly:
+   ```bash
+   /usr/local/bin/infiniband_exporter \
+       --collector.switch \
+       --collector.hca \
+       --perfquery.max-concurrent=8 \
+       --collector.ibswinfo --ibswinfo.max-concurrent=8
+   ```
+5. Scrape `http://<host>:9315/metrics`. Sample Prometheus job:
+   ```yaml
+   scrape_configs:
+     - job_name: infiniband
+       static_configs:
+         - targets: ["<host>:9315"]
+   ```
+6. Drop the rules from [`examples/prometheus/rules/`](examples/prometheus/rules/)
+   into your Prometheus config and import the dashboards from
+   [`examples/grafana/`](examples/grafana/).
 
 ## Endpoints
 
 | Path | Purpose |
 | --- | --- |
-| `/metrics` | InfiniBand metrics + `go_*`, `process_*`, `promhttp_*` self-metrics. `go_build_info` is always present. |
-| `/healthz` | Returns `200 ok` if the HTTP server is up. Does not probe fabric reachability — pair with metric-based alerts for that. |
+| `/metrics` | InfiniBand metrics + Go runtime / process / promhttp self-metrics. `go_build_info` is always present so dashboards can identify the running version. |
+| `/healthz` | Returns `200 ok` if the HTTP server is up. Does **not** probe the fabric — pair with metric-based alerts (`infiniband_switch_up` / `infiniband_hca_up`) for that. |
 
-Pass `--web.disable-exporter-metrics` to skip registering the Go runtime and process collectors. Filtering `go_*` / `process_*` / `promhttp_*` at scrape time is the responsibility of Prometheus (`metric_relabel_configs: drop`).
+Set `--web.disable-exporter-metrics` to skip registering the Go runtime
+and process collectors. Filtering individual `go_*` / `process_*` /
+`promhttp_*` series is the responsibility of Prometheus — use
+`metric_relabel_configs: drop` if needed.
 
-## Usage
+## Collectors
 
-Collectors are enabled or disabled via `--collector.<name>` and `--no-collector.<name>` flags.
+Enabled or disabled with `--collector.<name>` / `--no-collector.<name>`.
 
-Name | Description | Default
------|-------------|--------
-switch | Collect switch port counters | Enabled
-ibswinfo | Collect data on unmanaged switches via ibswinfo (BETA) | Disabled
-hca | Collect HCA port counters | Disabled
+| Collector | Default | Purpose |
+| --- | --- | --- |
+| `switch` | enabled | Per-port `perfquery` counters for fabric switches |
+| `hca` | disabled | Same counters, viewed from each HCA port the host can reach |
+| `ibswinfo` | disabled | Hardware info, PSU/fan status, temperature for switches via the [ibswinfo](https://github.com/stanford-rc/ibswinfo) helper |
+| `switch.base-metrics` | enabled | Toggles the headline `switch_*` series. Disable with `--no-collector.switch.base-metrics` to run rcv-error-details only |
+| `switch.rcv-err-details` | disabled | Adds the slower `-E` perfquery counters (one query per port) |
+| `switch.port-state` | disabled | Adds `infiniband_switch_port_state{port}` gauge (1 = up, 0 = down). See [docs/alerts.md](docs/alerts.md) for the alerting recipe. |
+| `hca.base-metrics` | enabled | Mirror of `switch.base-metrics` for the HCA collector |
+| `hca.rcv-err-details` | disabled | Mirror of `switch.rcv-err-details` for HCA |
 
-If you have a node name map file typically used with Subnet Managers, you can provide that file to the  `--ibnetdiscover.node-name-map` flag.  This will use friendly names for switches.
+## Configuration
 
+Selected flags. Run `infiniband_exporter --help` for the full list.
 
-If you wish to run the exporter as a user other than root and do not want to use sudo, you must make the UMAD device read/write to all users with something like the following:
+| Flag | Default | Notes |
+| --- | --- | --- |
+| `--web.listen-address` | `:9315` | TLS / basic auth via `--web.config.file` (toolkit format) |
+| `--sudo` | `false` | Wrap every `ibnetdiscover` / `perfquery` / `ibswinfo` invocation in `sudo`. Sample sudoers below. |
+| `--ibnetdiscover.path` | `ibnetdiscover` | Override if not on `$PATH` |
+| `--ibnetdiscover.timeout` | `20s` | |
+| `--ibnetdiscover.cache-ttl` | `0s` | When >0, reuses the parsed topology between scrapes |
+| `--perfquery.max-concurrent` | `1` | Critical for large fabrics. Bump to ~8 on multi-core hosts. |
+| `--perfquery.timeout` | `5s` | |
+| `--ibswinfo.max-concurrent` | `4` | Increased from 1 in v0.15.0 — see [docs/operations.md](docs/operations.md#sizing-perfquery-and-ibswinfo) |
+| `--ibswinfo.static-cache-ttl` | `15m` | Caches PartNumber / SerialNumber / firmware so most scrapes use the lighter `ibswinfo -o vitals` mode. Set to `0` to disable. |
+| `--exporter.runonce` | `false` | Single shot, write metrics to `--exporter.output` and exit. Pairs with node_exporter's textfile collector for fabrics where scrape time exceeds Prometheus's scrape timeout. |
 
-```
-$ cat /etc/udev/rules.d/99-ib.rules 
-KERNEL=="umad*", NAME="infiniband/%k" MODE="0666"
-```
+### Permissions
 
-If you wish to use sudo you will need to run with the `--sudo` flag.  Below is an example of the sudo rules necessary if the exporter rules as `infiniband_exporter` user: (adjust paths to `perfquery` and `ibnetdiscover` as needed)
+The exporter shells out to `ibnetdiscover`, `perfquery`, and `ibswinfo`,
+all of which need access to `/dev/infiniband/umad*`. Two options:
 
-```
-Defaults:infiniband_exporter !syslog
-Defaults:infiniband_exporter !requiretty
-infiniband_exporter ALL=(ALL) NOPASSWD: /usr/sbin/ibnetdiscover
-infiniband_exporter ALL=(ALL) NOPASSWD: /usr/sbin/perfquery
-```
+* Open the device node (production-grade systems usually do this anyway):
+  ```
+  $ cat /etc/udev/rules.d/99-ib.rules
+  KERNEL=="umad*", NAME="infiniband/%k" MODE="0666"
+  ```
 
-If `ibnetdiscover` and `perfquery` are not in PATH then their paths need to be provided via the `--ibnetdiscover.path` and `--perfquery.path` flags.
+* Or run the exporter with `--sudo` and a sudoers entry that whitelists
+  exactly the binaries we need:
+  ```
+  Defaults:infiniband_exporter !syslog,!requiretty
+  infiniband_exporter ALL=(ALL) NOPASSWD: /usr/sbin/ibnetdiscover, /usr/sbin/perfquery, /usr/bin/ibswinfo
+  ```
 
-### Collect switch information using ibswinfo (BETA)
+### Large fabrics
 
-The tool [ibswinfo](https://github.com/stanford-rc/ibswinfo) can be used to collect information from unmanaged InfiniBand switches such as power supply and fan health.  To enable this collection pass the `--collector.ibswinfo` flag and ensure either `ibswinfo` is in $PATH or define the path to that executable via the `--ibswinfo.path` flag.
+For fabrics where a single scrape exceeds Prometheus's scrape timeout,
+run the exporter with `--exporter.runonce` and have node_exporter pick
+up the textfile output. Full guide: [docs/operations.md](docs/operations.md).
 
-This feature is considered BETA as it relies on parsing non-machine readable data.
-In the future this exporter may collect the unmanaged switch information directly in a similar way to what ibswinfo is doing.
+## Documentation
 
-The collection of `ibswinfo` takes about 2-3 seconds per switch so consider increasing Prometheus scrape timeout or running using `--exporter.runonce` per [Large fabric considerations](#large-fabric-considerations).  Also consider increasing the `--ibswinfo.max-concurrent` to a value greater than the default of 1, but be aware that a value too high will cause timeouts executing concurrent `ibswinfo` commands.
-
-### Large fabric considerations
-
-If you have a large fabric where collection times are too long for Prometheus scrapes, the exporter can instead write metrics to a file that can be collected by node_exporter textfile collection.
-
-This exporter has been tested on a fabric with 109 switches each having around 36 ports and collecting only switches takes ~10 seconds.
-
-To collect the metrics from a file pass the `--collector.textfile.directory` flag to node_exporter like so: `--collector.textfile.directory=/var/lib/node_exporter/textfile_collector`.  Add this exporter to be executed via cron using flags like the following:
-
-* `--exporter.runonce`
-* `--exporter.output=/var/lib/node_exporter/textfile_collector/infiniband_exporter.prom`
-
-The collection time of `--collector.switch.rcv-err-details` can take much longer than base metrics due to having to execute `perfquery` once per port.
-One way to collect these metrics is collect base metrics with Prometheus scrapes and collect `--collector.switch.rcv-err-details` with runonce using the following flags (example on 8 core system, adjust `--perfquery.max-concurrent` as needed):
-
-* `--exporter.runonce`
-* `--exporter.output=/var/lib/node_exporter/textfile_collector/infiniband_exporter.prom`
-* `--no-collector.switch.base-metrics`
-* `--collector.switch.rcv-err-details`
-* `--perfquery.max-concurrent=8`
-
-## Install
-
-Download the [latest release](https://github.com/SckyzO/infiniband_exporter/releases)
-
-Add the user that will run `infiniband_exporter`
-
-```
-groupadd -r infiniband_exporter
-useradd -r -d /var/lib/infiniband_exporter -s /sbin/nologin -M -g infiniband_exporter -M infiniband_exporter
-```
-
-Install compiled binaries after extracting tar.gz from release page.
-
-```
-cp /tmp/infiniband_exporter /usr/sbin/infiniband_exporter
-```
-
-Add systemd unit file and start service. Modify the `ExecStart` or `OPTIONS` in `/etc/sysconfig/infiniband_exporter` with desired flags.
-The unit file uses [systemd's service templating feature](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#Service%20Templates) and [specifiers](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Specifiers).
-```
-cp systemd/infiniband_exporter@.service /etc/systemd/system/infiniband_exporter@.service
-systemctl daemon-reload
-systemctl start infiniband_exporter@infiniband_exporter.service
-```
+* [docs/operations.md](docs/operations.md) — sizing, sudoers, runonce mode, troubleshooting.
+* [docs/metrics.md](docs/metrics.md) — full metric reference.
+* [docs/alerts.md](docs/alerts.md) — annotated walkthrough of the example alert rules.
+* [docs/dashboards.md](docs/dashboards.md) — installing the example Grafana dashboards.
+* [scripts/README.md](scripts/README.md) — capturing & anonymizing fabric output (for issues / fixtures).
 
 ## Build from source
 
-The Go toolchain is never invoked on the host — every build, test, lint, and
-release operation runs inside a container. You only need `docker` (or `podman`
-aliased to `docker`) installed locally.
+Every build, test, lint, and release operation runs inside a container
+— the Go toolchain is never invoked on the host. You only need
+`docker` (or `podman` aliased to `docker`).
 
-| Target | What it does | Image used |
-| --- | --- | --- |
-| `make build` | Produce the `infiniband_exporter` binary | `golang:1.26.2` |
-| `make test` | `go test -short ./...` | `golang:1.26.2` |
-| `make test-race` | Race detector + coverage profile | `golang:1.26.2` |
-| `make vet` | `go vet ./...` | `golang:1.26.2` |
-| `make fmt` / `make fmt-check` | gofmt write / check | `golang:1.26.2` |
-| `make lint` | `golangci-lint run` | `golangci/golangci-lint:latest` |
-| `make tidy` | `go mod tidy` | `golang:1.26.2-alpine` |
-| `make release-snapshot` | Local GoReleaser dry-run | `goreleaser/goreleaser:latest` |
+| Target | Image |
+| --- | --- |
+| `make build` | `golang:1.26.2` |
+| `make test`, `make test-race`, `make vet`, `make fmt[-check]` | `golang:1.26.2` |
+| `make lint` | `golangci/golangci-lint:latest` |
+| `make ci-test`, `make ci-lint` | `nektosact/act` if `act` is not on `$PATH` |
+| `make smoke` | local binary, exercises `--help`, `--version`, `/healthz`, `/metrics` |
+| `make release-snapshot`, `make release-check` | `goreleaser/goreleaser:latest` |
 
-Override the toolchain version with `make GO_VERSION=1.26.3 build`. Module and
-build caches are persisted under `.build/cache/` to keep repeat invocations
-fast.
+Module and build caches persist under `.build/cache/` for fast
+repeat invocations. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the
+expected dev workflow.
+
+## Reporting an issue
+
+For fabric-specific bugs, please attach **anonymized** captures using the
+helpers in [`scripts/`](scripts/) — the issue template walks you through it.
+This way the bug stays reproducible without leaking your topology.

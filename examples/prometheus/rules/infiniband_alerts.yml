@@ -1,0 +1,209 @@
+# Alerting rules for infiniband_exporter.
+#
+# Severity tiering follows the convention recommended by the Prometheus
+# alerting docs:
+#   * critical — wake someone up
+#   * warning  — investigate during business hours
+#   * info     — capacity-planning / tuning signal, not actionable
+#
+# Thresholds here are starting points based on the SymbolErrorCounter /
+# LinkDownedCounter behaviour described in the IB Performance Management
+# spec. Tune for your fabric — a high SymbolErrorCounter rate is normal on
+# a freshly-cabled link for a few minutes after the ASIC syncs.
+
+groups:
+  - name: infiniband.exporter
+    rules:
+      - alert: IBExporterDown
+        expr: up{job=~".*infiniband.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "infiniband_exporter is not reachable"
+          description: |
+            Prometheus has not been able to scrape /metrics for 2 minutes.
+            The fabric itself may be fine — but no metric is being
+            collected, so we are blind. Check the exporter process,
+            the systemd unit, or the textfile cron job.
+
+      - alert: IBExporterScrapeStale
+        # In runonce/textfile mode, infiniband_exporter_last_execution
+        # marks the last successful pass. If a textfile output is
+        # >5 minutes old we are working with stale data.
+        expr: time() - infiniband_exporter_last_execution > 300
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Textfile metrics are stale on {{ $labels.instance }}"
+          description: |
+            Last runonce execution finished more than 5 minutes ago.
+            Check the cron / systemd timer driving --exporter.runonce.
+
+  - name: infiniband.fabric.health
+    rules:
+      - alert: IBSwitchScrapeFailing
+        # infiniband_switch_up is per-switch: 1 if perfquery succeeded
+        # for that GUID on the last collection, 0 otherwise.
+        expr: infiniband_switch_up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "perfquery against switch {{ $labels.switch }} is failing"
+          description: |
+            The exporter could not reach switch {{ $labels.switch }}
+            ({{ $labels.guid }}) via perfquery for 5 minutes. Check the
+            management link to that switch and the exporter logs for
+            stderr from perfquery.
+
+      - alert: IBHCAScrapeFailing
+        expr: infiniband_hca_up == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "perfquery against HCA {{ $labels.hca }} is failing"
+          description: |
+            HCA {{ $labels.hca }} ({{ $labels.guid }}) is unreachable via
+            perfquery. Confirm the host is up, then check the HCA's IB
+            cable.
+
+      - alert: IBSwitchPortDown
+        # Requires --collector.switch.port-state on the exporter.
+        # Pairs with infiniband:switch_port_ever_connected so we do not
+        # page on a port that was never cabled.
+        expr: infiniband_switch_port_state == 0 and on(guid, port) infiniband:switch_port_ever_connected
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Switch {{ $labels.switch }} port {{ $labels.port }} is DOWN"
+          description: |
+            Switch port previously seen up has been down for 5 minutes.
+            This is a real link loss on a previously-cabled port —
+            investigate the cable, the SFP, or the peer.
+
+  - name: infiniband.errors
+    rules:
+      - alert: IBPortLinkDownedRising
+        # LinkDownedCounter increments are rare and significant: they
+        # indicate the link error recovery process failed and the link
+        # actually went down. >0 over 5 minutes is worth a warning even
+        # if the port came back up; >2 is page-worthy.
+        expr: infiniband:switch_port_link_downed:rate5m * 300 > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Link flap on {{ $labels.switch }} port {{ $labels.port }}"
+          description: |
+            LinkDownedCounter incremented in the last 5 minutes. The link
+            recovered, but a flap is a strong predictor of cable / SFP
+            issues. Investigate before it becomes a hard down.
+
+      - alert: IBPortSymbolErrorBurst
+        # Per IB-PM spec, SymbolErrorCounter ticks on every detected
+        # 8b/10b decode error. A clean link gives <1/hour;
+        # >100/min sustained means the cable is dying.
+        expr: infiniband:switch_port_symbol_errors:rate5m > 100/60
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High symbol error rate on {{ $labels.switch }} port {{ $labels.port }}"
+          description: |
+            >100 symbol errors per minute for 10 minutes. The cable or
+            SFP on this port is likely degrading — schedule a swap.
+
+      - alert: IBPortRcvErrorRate
+        expr: infiniband:switch_port_receive_errors:rate5m > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Receive errors on {{ $labels.switch }} port {{ $labels.port }}"
+          description: |
+            More than 1 PortRcvError per second for 10 minutes. Likely
+            a cable / SFP / bad partition mapping issue.
+
+      - alert: IBPortXmitDiscardRate
+        expr: infiniband:switch_port_transmit_discards:rate5m > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Transmit discards on {{ $labels.switch }} port {{ $labels.port }}"
+          description: |
+            >1 PortXmitDiscard/s for 10 minutes — the port had outbound
+            traffic but the destination was busy or down. Often a
+            congestion symptom, sometimes a routing issue.
+
+      - alert: IBPortCongestionElevated
+        # PortXmitWait counts ticks during which there was traffic to
+        # send but no flow-control credits available. Sustained large
+        # rates mean the port is the bottleneck of the path.
+        expr: infiniband:switch_port_xmit_wait:rate5m > 1e6
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Sustained congestion on {{ $labels.switch }} port {{ $labels.port }}"
+          description: |
+            PortXmitWait rate elevated for 30 minutes. Not a fault —
+            this port is a bottleneck. Consider shifting traffic or
+            upgrading the link.
+
+  - name: infiniband.environment
+    rules:
+      # The following all require --collector.ibswinfo. Skip the group
+      # if you do not run ibswinfo.
+
+      - alert: IBSwitchTempHigh
+        # Mellanox switches throttle around 95°C. Page at 80°C — gives
+        # operations time to react.
+        expr: infiniband_switch_temperature_celsius > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Switch {{ $labels.switch }} temperature high ({{ $value }}°C)"
+          description: |
+            Switch ASIC temperature exceeded 80°C for 5 minutes. Check
+            datacentre cooling and switch fan health.
+
+      - alert: IBSwitchTempCritical
+        expr: infiniband_switch_temperature_celsius > 90
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Switch {{ $labels.switch }} temperature CRITICAL ({{ $value }}°C)"
+          description: |
+            Switch ASIC about to throttle. Investigate immediately.
+
+      - alert: IBPSUFailure
+        # power_supply_status_info is 1 with a `status` label whose value
+        # is the current PSU status string. Anything other than "OK" /
+        # "ok" is a fault.
+        expr: infiniband_switch_power_supply_status_info{status!~"OK|ok"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Switch {{ $labels.switch }} PSU{{ $labels.psu }} is {{ $labels.status }}"
+          description: |
+            Power supply on switch {{ $labels.switch }} is reporting
+            non-OK status. Replace the PSU.
+
+      - alert: IBSwitchFanFailed
+        expr: infiniband_switch_fan_status_info{status!~"OK|ok"} == 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Fan on switch {{ $labels.switch }} reporting {{ $labels.status }}"
+          description: |
+            Switch overall fan status is not OK. Pair with the per-fan
+            infiniband_switch_fan_rpm series to identify the failed unit.

@@ -31,6 +31,15 @@ var (
 	CollectSwitch       = kingpin.Flag("collector.switch", "Enable the switch collector").Default("true").Bool()
 	switchCollectBase   = kingpin.Flag("collector.switch.base-metrics", "Collect base metrics").Default("true").Bool()
 	switchCollectRcvErr = kingpin.Flag("collector.switch.rcv-err-details", "Collect Rcv Error Details").Default("false").Bool()
+	// When a port link goes down, ibnetdiscover marks it `???`. By default
+	// the parser drops those lines, so the corresponding metrics simply
+	// disappear and Prometheus alerting on "port down" has to rely on
+	// fragile `absent()` / `last_over_time` recipes. Enabling this flag
+	// makes the parser keep those ports and exposes them as
+	// infiniband_switch_port_state{guid, switch, port} = 0 (vs 1 for up
+	// ports), so `port_state == 0` is the natural alerting predicate.
+	// Original idea: upstream PR #37 (metfan1981).
+	switchCollectPortState = kingpin.Flag("collector.switch.port-state", "Report port link state (1=up, 0=down) on infiniband_switch_port_state").Default("false").Bool()
 )
 
 type SwitchCollector struct {
@@ -46,6 +55,7 @@ type SwitchCollector struct {
 	Uplink    *prometheus.Desc
 	Info      *prometheus.Desc
 	Up        *prometheus.Desc
+	PortState *prometheus.Desc
 }
 
 type SwitchMetrics struct {
@@ -84,6 +94,8 @@ func NewSwitchCollector(devices *[]InfinibandDevice, runonce bool, logger *slog.
 			"Constant 1 carrying switch identification labels (lid, guid, switch name)", []string{"guid", "switch", "lid"}, nil),
 		Up: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "up"),
 			"1 if the latest perfquery scrape of this switch succeeded, 0 otherwise (timeout or error).", []string{"guid", "switch"}, nil),
+		PortState: prometheus.NewDesc(prometheus.BuildFQName(namespace, "switch", "port_state"),
+			"Switch port link state (1=up, 0=down). Only emitted when --collector.switch.port-state is set.", labels, nil),
 	}
 }
 
@@ -99,6 +111,7 @@ func (s *SwitchCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- s.Uplink
 	ch <- s.Info
 	ch <- s.Up
+	ch <- s.PortState
 }
 
 func (s *SwitchCollector) Collect(ch chan<- prometheus.Metric) {
@@ -122,6 +135,16 @@ func (s *SwitchCollector) Collect(ch chan<- prometheus.Metric) {
 				ch <- prometheus.MustNewConstMetric(s.Rate, prometheus.GaugeValue, uplink.Rate, device.GUID, port, device.Name)
 				ch <- prometheus.MustNewConstMetric(s.RawRate, prometheus.GaugeValue, uplink.RawRate, device.GUID, port, device.Name)
 				ch <- prometheus.MustNewConstMetric(s.Uplink, prometheus.GaugeValue, 1, device.GUID, port, device.Name, uplink.Name, uplink.GUID, uplink.Type, uplink.PortNumber, uplink.LID)
+			}
+		}
+	}
+	if *switchCollectPortState {
+		for _, device := range *s.devices {
+			for port := range device.Uplinks {
+				ch <- prometheus.MustNewConstMetric(s.PortState, prometheus.GaugeValue, 1, device.GUID, port, device.Name)
+			}
+			for _, port := range device.DownPorts {
+				ch <- prometheus.MustNewConstMetric(s.PortState, prometheus.GaugeValue, 0, device.GUID, port, device.Name)
 			}
 		}
 	}
