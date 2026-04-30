@@ -1,0 +1,35 @@
+name: Feature request
+description: A new metric, a new flag, a new collector — or an improvement on an existing one.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For "how do I…" questions, please open a Discussion instead.
+        Feature requests are most useful when they describe a concrete
+        problem the missing feature would solve.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the operational situation, not the desired implementation.
+      placeholder: "On HDR-200 fabrics with X switches, scraping takes Y seconds because…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: New metric / flag / collector / behaviour. Sketch the metric name and label set if relevant.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing metrics, recording rules, or workarounds you tried.
+    validations:
+      required: false

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or operational help
+    url: https://github.com/SckyzO/infiniband_exporter/discussions
+    about: For "is this metric the right one to alert on" / "how do I tune X" please open a Discussion rather than a bug.

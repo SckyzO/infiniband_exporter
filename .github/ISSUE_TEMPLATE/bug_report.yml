@@ -1,0 +1,93 @@
+name: Bug report
+description: Something the exporter does (or fails to do) that you think is wrong.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report.
+
+        For fabric-specific issues — wrong values, missing metrics on a
+        given switch model, parser breaks on an `ibnetdiscover` line —
+        please attach **anonymized** captures so we can reproduce without
+        you having to send your topology in the clear:
+
+        ```
+        mkdir -p /tmp/ib-issue
+        ./scripts/capture-fixtures.sh /tmp/ib-issue
+        ./scripts/anonymize.sh /tmp/ib-issue/ibnetdiscover.out  ibnetdiscover.out
+        for f in /tmp/ib-issue/perfquery-*.out; do
+            ./scripts/anonymize.sh "$f" "$(basename "$f")"
+        done
+        ```
+
+        Inspect the resulting `*.out` files (`grep` for any hostname or
+        GUID prefix you recognize) before attaching. The anonymizer
+        preserves switch ↔ HCA relations so the bug remains reproducible.
+        See `scripts/README.md` for details.
+
+  - type: input
+    id: version
+    attributes:
+      label: Exporter version
+      description: Output of `infiniband_exporter --version` (one line is fine).
+      placeholder: "infiniband_exporter, version 0.18.0 (branch: HEAD, revision: …)"
+    validations:
+      required: true
+
+  - type: input
+    id: ib_tools
+    attributes:
+      label: InfiniBand tooling versions
+      description: "`ibnetdiscover -V` and `perfquery -V` (and `ibswinfo -V` if applicable). Helps us tell whether a parser break is upstream tooling drift."
+      placeholder: "ibnetdiscover from infiniband-diags 49.0; perfquery 49.0"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scrape_mode
+    attributes:
+      label: Scrape mode
+      options:
+        - HTTP (Prometheus pulling /metrics)
+        - "--exporter.runonce textfile mode"
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened
+      description: Describe the actual behaviour. Paste relevant exporter log lines and the command line you launched it with.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: anonymized_captures
+    attributes:
+      label: Anonymized captures (optional but very helpful)
+      description: |
+        Drag-and-drop or paste the output of the anonymized
+        `ibnetdiscover.out` and any relevant `perfquery-*.out`. Do **not**
+        paste raw output that still contains your real GUIDs / hostnames.
+      placeholder: "(attach files or paste anonymized contents)"
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: "Switch firmware, fabric size, environment specifics — anything you think might matter."
+    validations:
+      required: false
