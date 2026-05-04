@@ -1,7 +1,7 @@
 /.tarballs
 /.build
 /dist/
-/infiniband_exporter
+/bin/
 /c.out
 /coverage.html
 /coverage.txt

@@ -10,6 +10,8 @@ RELEASE_IMAGE ?= goreleaser/goreleaser:latest
 DOCKER       ?= docker
 PKG          ?= ./...
 BIN          ?= infiniband_exporter
+BIN_DIR      ?= bin
+BIN_PATH     := $(BIN_DIR)/$(BIN)
 
 # Run containers as the host user so artifacts (binary, dist/, cache) are
 # owned by you, not root. HOME is redirected to a writable mount and the
@@ -52,10 +54,13 @@ $(shell mkdir -p .build/cache/go-mod .build/cache/go-build .build/cache/golangci
 all: fmt-check vet test lint build
 
 .PHONY: build
-build:
+build: | $(BIN_DIR)
 	# -buildvcs=false: container has the source tree but no `git` to stamp VCS info.
 	# GoReleaser handles version stamping at release time.
-	$(RUN_GO) go build -trimpath -buildvcs=false -o $(BIN) .
+	$(RUN_GO) go build -trimpath -buildvcs=false -o $(BIN_PATH) .
+
+$(BIN_DIR):
+	@mkdir -p $(BIN_DIR)
 
 .PHONY: test
 test:
@@ -143,7 +148,7 @@ ci-lint:
 
 .PHONY: clean
 clean:
-	rm -rf $(BIN) coverage.txt dist/ .build/
+	rm -rf $(BIN_DIR)/ coverage.txt dist/ .build/
 
 # Smoke test: build, then exercise --help / --version / a brief HTTP
 # binding without any IB collector enabled (no ibnetdiscover required).
@@ -152,11 +157,11 @@ SMOKE_PORT ?= 19316
 .PHONY: smoke
 smoke: build
 	@echo "=== --version ==="
-	@./$(BIN) --version
+	@./$(BIN_PATH) --version
 	@echo "=== --help (truncated) ==="
-	@./$(BIN) --help 2>&1 | head -5
+	@./$(BIN_PATH) --help 2>&1 | head -5
 	@echo "=== HTTP bind on :$(SMOKE_PORT) ==="
-	@./$(BIN) --no-collector.switch --no-collector.hca --web.listen-address=:$(SMOKE_PORT) >/tmp/smoke.log 2>&1 & \
+	@./$(BIN_PATH) --no-collector.switch --no-collector.hca --web.listen-address=:$(SMOKE_PORT) >/tmp/smoke.log 2>&1 & \
 		pid=$$!; \
 		sleep 1; \
 		curl -fsS "http://localhost:$(SMOKE_PORT)/" >/dev/null && echo "  / OK"; \
