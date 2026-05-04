@@ -40,13 +40,13 @@ const (
 )
 
 var (
-	runOnce  = kingpin.Flag("exporter.runonce", "Run exporter once and write metrics to file").Default("false").Bool()
-	output   = kingpin.Flag("exporter.output", "Output file to write metrics to when using runonce").Default("").String()
-	lockFile = kingpin.Flag("exporter.lockfile", "Lock file path").Default("/tmp/infiniband_exporter.lock").String()
+	runOnce  = kingpin.Flag("exporter.runonce", "Run once and write metrics to --exporter.output instead of starting the HTTP server, for node_exporter textfile collector ingestion (default: disabled).").Default("false").Bool()
+	output   = kingpin.Flag("exporter.output", "Output file path for --exporter.runonce mode (default: empty, required when --exporter.runonce).").Default("").String()
+	lockFile = kingpin.Flag("exporter.lockfile", "Lock file used by --exporter.runonce to prevent concurrent writes (default: /tmp/infiniband_exporter.lock).").Default("/tmp/infiniband_exporter.lock").String()
 	// When true, the registry skips registering Go runtime / process collectors.
 	// build_info is always registered. Filtering of go_*/process_*/promhttp_*
 	// at scrape time is left to Prometheus metric_relabel_configs.
-	disableExporterMetrics = kingpin.Flag("web.disable-exporter-metrics", "Exclude Go runtime and process metrics from /metrics").Default("false").Bool()
+	disableExporterMetrics = kingpin.Flag("web.disable-exporter-metrics", "Exclude Go runtime and process metrics from /metrics. build_info stays exposed (default: disabled, all exporter-internal metrics are emitted).").Default("false").Bool()
 	toolkitFlags           = webflag.AddFlags(kingpin.CommandLine, ":9315")
 )
 

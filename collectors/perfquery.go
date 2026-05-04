@@ -28,9 +28,9 @@ import (
 )
 
 var (
-	perfqueryPath    = kingpin.Flag("perfquery.path", "Path to perfquery").Default("perfquery").String()
-	perfqueryTimeout = kingpin.Flag("perfquery.timeout", "Timeout for perfquery execution").Default("5s").Duration()
-	maxConcurrent    = kingpin.Flag("perfquery.max-concurrent", "Max number of concurrent perfquery executions").Default("1").Int()
+	perfqueryPath    = kingpin.Flag("perfquery.path", "Path to the perfquery binary (default: perfquery, resolved via $PATH).").Default("perfquery").String()
+	perfqueryTimeout = kingpin.Flag("perfquery.timeout", "Timeout for one perfquery execution (default: 5s).").Default("5s").Duration()
+	maxConcurrent    = kingpin.Flag("perfquery.max-concurrent", "Max number of concurrent perfquery executions (default: 4). Bump for large fabrics.").Default("4").Int()
 	PerfqueryExec    = perfquery
 )
 

@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	useSudo         = kingpin.Flag("sudo", "Use sudo to execute IB commands").Default("false").Bool()
+	useSudo         = kingpin.Flag("sudo", "Wrap ibnetdiscover / perfquery / ibswinfo invocations in sudo (default: disabled).").Default("false").Bool()
 	execCommand     = exec.CommandContext
 	collectDuration = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "exporter", "collector_duration_seconds"),

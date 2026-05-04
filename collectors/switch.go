@@ -28,13 +28,13 @@ import (
 )
 
 var (
-	CollectSwitch       = kingpin.Flag("collector.switch", "Enable the switch collector").Default("true").Bool()
-	switchCollectBase   = kingpin.Flag("collector.switch.base-metrics", "Collect base metrics").Default("true").Bool()
-	switchCollectRcvErr = kingpin.Flag("collector.switch.rcv-err-details", "Collect Rcv Error Details").Default("false").Bool()
+	CollectSwitch       = kingpin.Flag("collector.switch", "Enable the switch collector — emits per-switch-port perfquery counters (default: enabled).").Default("true").Bool()
+	switchCollectBase   = kingpin.Flag("collector.switch.base-metrics", "Collect base perfquery counters on switch ports (default: enabled). Has effect only when --collector.switch is on.").Default("true").Bool()
+	switchCollectRcvErr = kingpin.Flag("collector.switch.rcv-err-details", "Collect PortRcvErrorDetails on switch ports — adds one perfquery -E call per port, slow on large fabrics (default: disabled).").Default("false").Bool()
 	// Persistent port-state series so alerts can use `port_state == 0`
 	// instead of the fragile `absent()` recipes that disappearing
 	// metrics force. Adapted from upstream PR #37 (metfan1981).
-	switchCollectPortState = kingpin.Flag("collector.switch.port-state", "Report port link state (1=up, 0=down) on infiniband_switch_port_state").Default("false").Bool()
+	switchCollectPortState = kingpin.Flag("collector.switch.port-state", "Emit infiniband_switch_port_state (1=up, 0=down). Required by the IBSwitchPortDown alert (default: disabled).").Default("false").Bool()
 )
 
 type SwitchCollector struct {

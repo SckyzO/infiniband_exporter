@@ -28,9 +28,9 @@ import (
 )
 
 var (
-	CollectHCA       = kingpin.Flag("collector.hca", "Enable the HCA collector").Default("false").Bool()
-	hcaCollectBase   = kingpin.Flag("collector.hca.base-metrics", "Collect base metrics").Default("true").Bool()
-	hcaCollectRcvErr = kingpin.Flag("collector.hca.rcv-err-details", "Collect Rcv Error Details").Default("false").Bool()
+	CollectHCA       = kingpin.Flag("collector.hca", "Enable the HCA collector — emits per-HCA-port perfquery counters (default: disabled).").Default("false").Bool()
+	hcaCollectBase   = kingpin.Flag("collector.hca.base-metrics", "Collect base perfquery counters on HCA ports (default: enabled). Has effect only when --collector.hca is on.").Default("true").Bool()
+	hcaCollectRcvErr = kingpin.Flag("collector.hca.rcv-err-details", "Collect PortRcvErrorDetails on HCA ports — adds one perfquery -E call per port, slow on large fabrics (default: disabled).").Default("false").Bool()
 )
 
 type HCACollector struct {

@@ -32,17 +32,17 @@ import (
 )
 
 var (
-	CollectIbswinfo = kingpin.Flag("collector.ibswinfo", "Enable ibswinfo data collection (BETA)").Default("false").Bool()
-	ibswinfoPath    = kingpin.Flag("ibswinfo.path", "Path to ibswinfo").Default("ibswinfo").String()
-	ibswinfoTimeout = kingpin.Flag("ibswinfo.timeout", "Timeout for ibswinfo execution").Default("10s").Duration()
+	CollectIbswinfo = kingpin.Flag("collector.ibswinfo", "Enable ibswinfo data collection — BETA, requires the ibswinfo helper script (default: disabled).").Default("false").Bool()
+	ibswinfoPath    = kingpin.Flag("ibswinfo.path", "Path to the ibswinfo helper script (default: ibswinfo, resolved via $PATH).").Default("ibswinfo").String()
+	ibswinfoTimeout = kingpin.Flag("ibswinfo.timeout", "Timeout for one ibswinfo execution (default: 10s).").Default("10s").Duration()
 	// ibswinfo is ~1.4 s per switch on HDR fabrics; 4 in flight is the
 	// observed sweet spot (~4× faster) before the SMA starts contending.
-	ibswinfoMaxConcurrent = kingpin.Flag("ibswinfo.max-concurrent", "Max number of concurrent ibswinfo executions").Default("4").Int()
+	ibswinfoMaxConcurrent = kingpin.Flag("ibswinfo.max-concurrent", "Max number of concurrent ibswinfo executions (default: 4).").Default("4").Int()
 	// While the static-field cache is fresh, scrapes use the lighter
 	// `ibswinfo -o vitals` mode (dynamic registers only) and merge the
-	// cached PartNumber / SerialNumber / PSID / FirmwareVersion back in.
-	// 0 disables the optimization.
-	ibswinfoStaticCacheTTL                  = kingpin.Flag("ibswinfo.static-cache-ttl", "TTL for caching static ibswinfo fields. 0 disables the cache.").Default("15m").Duration()
+	// cached PartNumber / SerialNumber / PSID / FirmwareVersion + status
+	// strings back in. 0 disables the optimization.
+	ibswinfoStaticCacheTTL                  = kingpin.Flag("ibswinfo.static-cache-ttl", "TTL for caching static + status ibswinfo fields (default: 5m). 0 disables the cache and runs full ibswinfo every scrape.").Default("5m").Duration()
 	IbswinfoExec           IbswinfoExecFunc = ibswinfo
 )
 
