@@ -13,6 +13,27 @@ BIN          ?= infiniband_exporter
 BIN_DIR      ?= bin
 BIN_PATH     := $(BIN_DIR)/$(BIN)
 
+# Version stamped into the binary. Defaults to the latest annotated git
+# tag (without the leading 'v'); falls back to the short commit if there
+# is no tag, and to "dev" if not in a git repo. Override on the CLI:
+#   make build VERSION=1.1.0-rc1
+#   make build VERSION=$(git describe --tags --dirty)
+VERSION      ?= $(shell git describe --tags --dirty --always 2>/dev/null | sed 's/^v//' || echo dev)
+COMMIT       ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BRANCH       ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)
+BUILD_USER   ?= $(shell whoami 2>/dev/null || echo make)
+BUILD_DATE   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# Same -X targets as .goreleaser.yaml so a local `make build` produces a
+# binary whose --version reports the same fields as a GoReleaser build.
+VERSION_PKG  := github.com/prometheus/common/version
+LDFLAGS      := \
+	-X $(VERSION_PKG).Version=$(VERSION) \
+	-X $(VERSION_PKG).Revision=$(COMMIT) \
+	-X $(VERSION_PKG).Branch=$(BRANCH) \
+	-X $(VERSION_PKG).BuildUser=$(BUILD_USER) \
+	-X $(VERSION_PKG).BuildDate=$(BUILD_DATE)
+
 # Run containers as the host user so artifacts (binary, dist/, cache) are
 # owned by you, not root. HOME is redirected to a writable mount and the
 # Go / golangci caches are anchored there too — none of them rely on
@@ -56,8 +77,10 @@ all: fmt-check vet test lint build
 .PHONY: build
 build: | $(BIN_DIR)
 	# -buildvcs=false: container has the source tree but no `git` to stamp VCS info.
-	# GoReleaser handles version stamping at release time.
-	$(RUN_GO) go build -trimpath -buildvcs=false -o $(BIN_PATH) .
+	# Version is stamped via -ldflags, computed on the host and passed in.
+	# GoReleaser uses the same -X targets at release time.
+	@echo "Building $(BIN) version=$(VERSION) commit=$(COMMIT)"
+	$(RUN_GO) go build -trimpath -buildvcs=false -ldflags '$(LDFLAGS)' -o $(BIN_PATH) .
 
 $(BIN_DIR):
 	@mkdir -p $(BIN_DIR)
