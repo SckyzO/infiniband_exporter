@@ -76,6 +76,26 @@ groups:
         # page on a port that was never cabled.
         expr: infiniband_switch_port_state == 0 and on(guid, port) infiniband:switch_port_ever_connected
         for: 5m
+
+      - alert: IBPortStateMetricMissing
+        # Catches the silent-failure case where these rules are
+        # deployed but the exporter is running without
+        # --collector.switch.port-state. Without that flag the
+        # `infiniband_switch_port_state` series simply does not exist
+        # and IBSwitchPortDown is silently inoperative. The 30 m gate
+        # avoids paging during exporter restarts.
+        expr: absent_over_time(infiniband_switch_port_state[30m])
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "infiniband_switch_port_state series absent — IBSwitchPortDown is inoperative"
+          description: |
+            No `infiniband_switch_port_state` series have been seen for
+            30 minutes. Either the infiniband_exporter is not running,
+            or it is running without `--collector.switch.port-state`.
+            Without this series the IBSwitchPortDown alert is silently
+            inoperative.
         labels:
           severity: critical
         annotations:

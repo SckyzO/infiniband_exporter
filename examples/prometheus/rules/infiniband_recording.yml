@@ -39,7 +39,7 @@ groups:
   - name: infiniband.port.errors
     interval: 1m
     rules:
-      # Headline error rates per port. The list mirrors the IB
+      # Headline error rates per switch port. The list mirrors the IB
       # Performance Management spec's "errors that page" set; if you
       # need finer granularity, build derived rules off the raw
       # _total counters.
@@ -56,6 +56,18 @@ groups:
       # Congestion: PortXmitWait increments are the canonical signal.
       - record: infiniband:switch_port_xmit_wait:rate5m
         expr: rate(infiniband_switch_port_transmit_wait_total[5m])
+
+      # Same set, HCA side. Mirrors the switch-port rules so the HCA
+      # detail dashboard and any HCA-side alerts can rely on
+      # pre-computed rates instead of querying the raw counters.
+      - record: infiniband:hca_port_symbol_errors:rate5m
+        expr: rate(infiniband_hca_port_symbol_error_total[5m])
+      - record: infiniband:hca_port_link_downed:rate5m
+        expr: rate(infiniband_hca_port_link_downed_total[5m])
+      - record: infiniband:hca_port_receive_errors:rate5m
+        expr: rate(infiniband_hca_port_receive_errors_total[5m])
+      - record: infiniband:hca_port_transmit_discards:rate5m
+        expr: rate(infiniband_hca_port_transmit_discards_total[5m])
 
       # Total errors per port (any cause). Lets dashboards rank ports
       # by combined error pressure without listing every individual
