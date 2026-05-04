@@ -23,6 +23,25 @@ Three tiers, following Prometheus alerting docs:
 | `warning`  | Investigate during business hours | Email/ticket |
 | `info`     | Capacity-planning / tuning signal | Dashboard, no alert routing |
 
+## Required exporter flags
+
+Each alert in the catalogue depends on a specific source metric, which
+in turn requires a particular collector to be enabled. Cross-check
+your exporter command line against this matrix before importing the
+rules — an alert whose source metric does not exist will silently
+never fire.
+
+| Alert(s) | Source metric | Required exporter flag(s) |
+| --- | --- | --- |
+| `IBSwitchScrapeFailing` | `infiniband_switch_up` | `--collector.switch` (default: enabled) |
+| `IBHCAScrapeFailing` | `infiniband_hca_up` | `--collector.hca` (default: disabled — turn on) |
+| `IBSwitchPortDown` | `infiniband_switch_port_state` | `--collector.switch.port-state` (default: disabled — turn on) |
+| `IBPortStateMetricMissing` | absence of the above | none — meta-alert that catches the case where the flag is missing |
+| `IBPortLinkDownedRising`, `IBPortSymbolErrorBurst`, `IBPortRcvErrorRate`, `IBPortXmitDiscardRate`, `IBPortCongestionElevated` | per-port perfquery counters | `--collector.switch` + `--collector.switch.base-metrics` (both default: enabled) |
+| `IBSwitchTempHigh`, `IBSwitchTempCritical`, `IBPSUFailure`, `IBSwitchFanFailed` | `infiniband_switch_*` from ibswinfo | `--collector.ibswinfo` (default: disabled) and `ibswinfo.sh` resolvable via `--ibswinfo.path` |
+| `IBExporterDown` | `up` | none — Prometheus-side meta-metric |
+| `IBExporterScrapeStale` | `infiniband_exporter_last_execution` | `--exporter.runonce` mode only |
+
 ## Alert catalogue
 
 ### Exporter health
@@ -39,12 +58,19 @@ Three tiers, following Prometheus alerting docs:
 | `IBSwitchScrapeFailing` | critical | `infiniband_switch_up == 0` for 5 m |
 | `IBHCAScrapeFailing` | warning | `infiniband_hca_up == 0` for 5 m |
 | `IBSwitchPortDown` | critical | `infiniband_switch_port_state == 0 and on() infiniband:switch_port_ever_connected` for 5 m |
+| `IBPortStateMetricMissing` | warning | `absent_over_time(infiniband_switch_port_state[30m])` for 30 m |
 
 The `IBSwitchPortDown` alert pairs `port_state == 0` with the
 `infiniband:switch_port_ever_connected` recording rule
 (`max_over_time(...[7d]) == 1`) so we don't page on ports that have
 never been wired. **Requires `--collector.switch.port-state` on the
 exporter.**
+
+`IBPortStateMetricMissing` (added in 1.1) is the safety net for that
+last requirement: it fires when the `port_state` series has not been
+seen anywhere in the fabric for 30 minutes, which is what happens if
+operators deploy these rules but forget the flag — without this
+catch, `IBSwitchPortDown` is silently inoperative.
 
 ### Errors
 

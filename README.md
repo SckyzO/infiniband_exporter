@@ -5,37 +5,73 @@ standard `infiniband-diags` tools (`ibnetdiscover`, `perfquery`) and the
 optional `ibswinfo` helper for unmanaged switches. Exposes them on a
 `/metrics` endpoint suitable for Prometheus.
 
-> **Status: stable** (1.0.0). Independent fork of
+> **Status: stable.** Independent fork of
 > [`treydock/infiniband_exporter`](https://github.com/treydock/infiniband_exporter).
 > See [`CHANGELOG.md`](CHANGELOG.md) for the divergence history and the
 > stability commitment.
 
 ## Quick start
 
-1. Install the InfiniBand diagnostic tools on the host that runs the
-   exporter (`infiniband-diags`, plus `ibswinfo` if you intend to scrape
-   unmanaged switches).
-2. Make sure that host has at least one active fabric link.
+> **Recommended command line for a typical fabric.** `--collector.hca`
+> and `--collector.switch.port-state` are off by default for upstream
+> compatibility but most operators want them; the rest are tuned for a
+> ≤50-switch HDR fabric. Adjust the `*.max-concurrent` flags upward on
+> bigger sites.
+
+```bash
+infiniband_exporter \
+    --collector.hca \
+    --collector.switch.port-state \
+    --collector.ibswinfo \
+    --ibswinfo.path=/usr/local/bin/ibswinfo.sh \
+    --perfquery.max-concurrent=4 \
+    --ibswinfo.max-concurrent=4 \
+    --web.listen-address=:9315
+```
+
+To deploy:
+
+1. Install `infiniband-diags` on the host (provides `ibnetdiscover`
+   and `perfquery`). Optional: install
+   [`ibswinfo`](https://github.com/SckyzO/ibswinfo) if you have
+   unmanaged Mellanox switches and want PSU/fan/temperature data.
+2. Confirm at least one active IB link exists on that host.
 3. Drop the `infiniband_exporter` binary in `/usr/local/bin/`.
-4. Either install the systemd unit from `systemd/infiniband_exporter@.service`,
-   or run the binary directly:
-   ```bash
-   /usr/local/bin/infiniband_exporter \
-       --collector.switch \
-       --collector.hca \
-       --perfquery.max-concurrent=8 \
-       --collector.ibswinfo --ibswinfo.max-concurrent=8
-   ```
-5. Scrape `http://<host>:9315/metrics`. Sample Prometheus job:
+4. Either install the systemd unit from
+   `systemd/infiniband_exporter@.service`, or run the command above
+   directly.
+5. Scrape `http://<host>:9315/metrics`:
    ```yaml
    scrape_configs:
      - job_name: infiniband
        static_configs:
          - targets: ["<host>:9315"]
    ```
-6. Drop the rules from [`examples/prometheus/rules/`](examples/prometheus/rules/)
-   into your Prometheus config and import the dashboards from
+6. Drop the rules from
+   [`examples/prometheus/rules/`](examples/prometheus/rules/) into
+   Prometheus and import the dashboards from
    [`examples/grafana/`](examples/grafana/).
+
+### Container
+
+Multi-arch images on GitHub Container Registry:
+`ghcr.io/sckyzo/infiniband_exporter`.
+
+```bash
+docker run --rm \
+    --device /dev/infiniband \
+    -p 9315:9315 \
+    ghcr.io/sckyzo/infiniband_exporter:latest \
+    --collector.hca \
+    --collector.switch.port-state
+```
+
+The container ships `infiniband-diags`. Pass `--device /dev/infiniband`
+(or `--privileged` if local permissions block device access) so the
+exporter can shell out to `ibnetdiscover` and `perfquery` against the
+host's IB stack. `ibswinfo` is **not** in the image — install it on
+the host and bind-mount it (`-v /usr/local/bin/ibswinfo.sh:/usr/local/bin/ibswinfo.sh:ro`)
+if you need that collector.
 
 ## Endpoints
 
