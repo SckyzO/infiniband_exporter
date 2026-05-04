@@ -77,7 +77,7 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[5m]))", "refId": "A"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[$__rate_interval]))", "refId": "A"}
       ],
       "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "colorMode": "value", "orientation": "auto", "graphMode": "area"},
       "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []}
@@ -89,7 +89,7 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[5m]))", "refId": "A"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[$__rate_interval]))", "refId": "A"}
       ],
       "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "colorMode": "value", "orientation": "auto", "graphMode": "area"},
       "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []}
@@ -101,8 +101,8 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[5m]))", "legendFormat": "Tx", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[5m]))", "legendFormat": "Rx", "refId": "B"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[$__rate_interval]))", "legendFormat": "Tx", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[$__rate_interval]))", "legendFormat": "Rx", "refId": "B"}
       ],
       "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineWidth": 1}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -115,7 +115,7 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_symbol_error_total[5m]) + rate(infiniband_switch_port_link_downed_total[5m]) + rate(infiniband_switch_port_link_error_recovery_total[5m]) + rate(infiniband_switch_port_receive_errors_total[5m]) + rate(infiniband_switch_port_transmit_discards_total[5m])))", "legendFormat": "{{switch}}", "refId": "A"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_symbol_error_total[$__rate_interval]) + rate(infiniband_switch_port_link_downed_total[$__rate_interval]) + rate(infiniband_switch_port_link_error_recovery_total[$__rate_interval]) + rate(infiniband_switch_port_receive_errors_total[$__rate_interval]) + rate(infiniband_switch_port_transmit_discards_total[$__rate_interval])))", "legendFormat": "{{switch}}", "refId": "A"}
       ],
       "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 0, "lineWidth": 2}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -164,7 +164,7 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_wait_total[5m])))", "legendFormat": "{{switch}}", "refId": "A"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_wait_total[$__rate_interval])))", "legendFormat": "{{switch}}", "refId": "A"}
       ],
       "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 2}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -177,7 +177,7 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_packets_total[5m])))", "legendFormat": "{{switch}}", "refId": "A"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_packets_total[$__rate_interval])))", "legendFormat": "{{switch}}", "refId": "A"}
       ],
       "fieldConfig": {"defaults": {"unit": "pps", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 2}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}

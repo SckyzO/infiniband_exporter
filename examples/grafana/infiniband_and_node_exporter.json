@@ -39,7 +39,7 @@
       "id": 2, "type": "gauge", "title": "CPU busy",
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=~\"$instance\"}[5m])) * 100)", "refId": "A"}],
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=~\"$instance\"}[$__rate_interval])) * 100)", "refId": "A"}],
       "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "showThresholdLabels": false, "showThresholdMarkers": true},
       "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}}, "overrides": []}
     },
@@ -86,7 +86,7 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum by (mode) (rate(node_cpu_seconds_total{instance=~\"$instance\",mode!=\"idle\"}[5m]))", "legendFormat": "{{mode}}", "refId": "A"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum by (mode) (rate(node_cpu_seconds_total{instance=~\"$instance\",mode!=\"idle\"}[$__rate_interval]))", "legendFormat": "{{mode}}", "refId": "A"}
       ],
       "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 30, "lineWidth": 1, "stacking": {"mode": "normal", "group": "A"}}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -133,8 +133,8 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 23},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_data_transmitted_bytes_total{instance=~\"$instance\"}[5m])", "legendFormat": "Tx {{device}}/{{port}}", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_data_received_bytes_total{instance=~\"$instance\"}[5m])", "legendFormat": "Rx {{device}}/{{port}}", "refId": "B"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_data_transmitted_bytes_total{instance=~\"$instance\"}[$__rate_interval])", "legendFormat": "Tx {{device}}/{{port}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_data_received_bytes_total{instance=~\"$instance\"}[$__rate_interval])", "legendFormat": "Rx {{device}}/{{port}}", "refId": "B"}
       ],
       "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -144,9 +144,9 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 23},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_packets_received_with_errors_total{instance=~\"$instance\"}[5m])", "legendFormat": "rcv errors {{device}}/{{port}}", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_packets_transmitted_discards_total{instance=~\"$instance\"}[5m])", "legendFormat": "discards {{device}}/{{port}}", "refId": "B"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_link_downed_total{instance=~\"$instance\"}[5m])", "legendFormat": "link down {{device}}/{{port}}", "refId": "C"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_packets_received_with_errors_total{instance=~\"$instance\"}[$__rate_interval])", "legendFormat": "rcv errors {{device}}/{{port}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_packets_transmitted_discards_total{instance=~\"$instance\"}[$__rate_interval])", "legendFormat": "discards {{device}}/{{port}}", "refId": "B"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_infiniband_port_link_downed_total{instance=~\"$instance\"}[$__rate_interval])", "legendFormat": "link down {{device}}/{{port}}", "refId": "C"}
       ],
       "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
@@ -175,8 +175,8 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\"}[5m])", "legendFormat": "read {{device}}", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_disk_written_bytes_total{instance=~\"$instance\"}[5m])", "legendFormat": "write {{device}}", "refId": "B"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\"}[$__rate_interval])", "legendFormat": "read {{device}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "rate(node_disk_written_bytes_total{instance=~\"$instance\"}[$__rate_interval])", "legendFormat": "write {{device}}", "refId": "B"}
       ],
       "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
