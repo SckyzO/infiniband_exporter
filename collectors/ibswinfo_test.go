@@ -668,6 +668,26 @@ func TestIbswinfoCollectorCacheHitVitals(t *testing.T) {
 		"infiniband_switch_hardware_info"); err != nil {
 		t.Errorf("static fields not merged from cache after vitals scrape:\n%s", err)
 	}
+	// Status fields must also survive the warm scrape — alerting depends on
+	// them, and dropping them between full scrapes was the 1.0 cache bug.
+	// test1 fixture has both PSUs with status=OK and the top-level fan
+	// status=ERROR, so we expect:
+	//   - 2 power_supply_status_info per device  (PSU0 + PSU1, status=OK)
+	//   - 1 fan_status_info per device          (status=ERROR)
+	count, err := testutil.GatherAndCount(gatherers, "infiniband_switch_power_supply_status_info")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := 2 * len(switchDevices); count != want {
+		t.Errorf("power_supply_status_info: expected %d series after warm scrape (cache must re-emit), got %d", want, count)
+	}
+	count, err = testutil.GatherAndCount(gatherers, "infiniband_switch_fan_status_info")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := len(switchDevices); count != want {
+		t.Errorf("fan_status_info: expected %d series after warm scrape (cache must re-emit), got %d", want, count)
+	}
 }
 
 // TestIbswinfoCollectorCacheExpired verifies that an expired entry forces

@@ -1,3 +1,34 @@
+## 1.0.1 / 2026-05-04
+
+Bug fix release — no API changes, no flag changes, no metric changes.
+
+### Bug fixes
+
+* **`ibswinfo` cache no longer hides PSU/fan status during the TTL
+  window.** Up to 1.0, the static-fields cache only stored truly
+  static fields (part number, serial, PSID, firmware version). On
+  warm scrapes (vitals path), `infiniband_switch_power_supply_*_info`
+  and `infiniband_switch_fan_status_info` were not emitted at all
+  because the `-o vitals` output does not carry those status fields.
+  Result: a PSU or fan failure was invisible to alerting until the
+  next full scrape (default TTL = 15 min). The cache now also stores
+  the last-known per-PSU `Status` / `DCPower` / `FanStatus` strings
+  and the top-level `FanStatus`, and re-emits them on warm scrapes.
+  Trade-off: a status flip is detected at the next full scrape, so
+  worst-case detection delay = `--ibswinfo.static-cache-ttl`. With
+  the default TTL of 15 min this is acceptable for hardware faults
+  (alerts have `for: 1m–10m` clauses anyway). Workaround for users
+  who want immediate detection: `--ibswinfo.static-cache-ttl=0`.
+  Existing test `TestIbswinfoCollectorCacheHitVitals` was extended
+  to assert that the warm scrape still emits the status_info series.
+* **Dashboard fix:** `Failed PSUs / fans` panel in
+  `infiniband-fabric-overview-{small,large}.json` was broken on
+  Grafana 10+ — Grafana threw "Organize fields only works with a
+  single frame" because the panel had four parallel queries feeding
+  the `organize` transformation. Replaced with a single query using
+  `label_replace(...) or label_replace(...)` to attach a `kind`
+  label per failure type, producing one frame.
+
 ## 1.0.0 / 2026-04-30
 
 First stable release of the SckyzO fork. No new features over v0.19.0

@@ -149,13 +149,10 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_power_supply_status_info{status!~\"OK|ok\"} == 1", "instant": true, "format": "table", "legendFormat": "PSU status", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_power_supply_dc_power_status_info{status!~\"OK|ok\"} == 1", "instant": true, "format": "table", "legendFormat": "DC power", "refId": "B"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_power_supply_fan_status_info{status!~\"OK|ok\"} == 1", "instant": true, "format": "table", "legendFormat": "PSU fan", "refId": "C"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_fan_status_info{status!~\"OK|ok\"} == 1", "instant": true, "format": "table", "legendFormat": "Switch fan", "refId": "D"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "label_replace(infiniband_switch_power_supply_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU status\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_dc_power_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"DC power\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU fan\", \"switch\", \".*\") or label_replace(infiniband_switch_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"Switch fan\", \"switch\", \".*\")", "instant": true, "format": "table", "refId": "A"}
       ],
       "transformations": [
-        {"id": "organize", "options": {"excludeByName": {"Time": true, "Value": true, "__name__": true, "instance": true, "job": true}}}
+        {"id": "organize", "options": {"excludeByName": {"Time": true, "Value": true, "__name__": true, "instance": true, "job": true, "guid": true}, "indexByName": {"kind": 0, "switch": 1, "psu": 2, "status": 3}}}
       ],
       "options": {"showHeader": true, "footer": {"show": false}}
     }

@@ -82,13 +82,13 @@ PERFQUERY_CONCURRENCY=16 IBSWINFO_CONCURRENCY=8 bash test_ib.sh > out.log 2>&1
 
 * **Cache validation** (TEST 3 vs TEST 4): the per-switch
   `infiniband_ibswinfo_collect_duration_seconds` value should be lower
-  on the warm scrape (TEST 3 scrape #2/#3) than on TEST 4. Even more
-  diagnostic: `infiniband_switch_power_supply_status_info`,
-  `infiniband_switch_power_supply_dc_power_status_info`,
-  `infiniband_switch_power_supply_fan_status_info`, and
-  `infiniband_switch_fan_status_info` **must drop to 0 series** on warm
-  scrapes — the vitals output does not carry status fields. If those
-  series are still present on warm scrapes, the cache is broken.
+  on the warm scrape (TEST 3 scrape #2/#3) than on TEST 4. The
+  `*_status_info` series stay present on warm scrapes — they are
+  re-emitted from the cache (since 1.0.1) so PSU/fan failures remain
+  visible to alerting between full scrapes. Detection of a status
+  flip is bounded by `--ibswinfo.static-cache-ttl` (default 15 min);
+  set the TTL to 0 if you need immediate detection at the cost of
+  running the full ibswinfo every scrape.
 
 * **TEST 5 ibnetdiscover cache**:
   `infiniband_exporter_collector_duration_seconds{collector="ibnetdiscover"}`

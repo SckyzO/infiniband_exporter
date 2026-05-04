@@ -50,14 +50,38 @@ var (
 // vitals=true requests the lightweight `-o vitals` output mode.
 type IbswinfoExecFunc func(lid string, vitals bool, ctx context.Context) (string, error)
 
-// ibswinfoCacheEntry stores the fields that practically never change between
-// scrapes (hardware identifiers and firmware version).
+// ibswinfoCacheEntry stores the fields that the lightweight `-o vitals`
+// output does not carry. Two flavours of fields:
+//
+//   - Truly static (hardware identifiers, firmware version): they
+//     practically never change between scrapes.
+//   - Status fields (PSU/fan health strings): they DO change when
+//     hardware fails, but the vitals output drops them. We keep the
+//     last-known full-scrape value here and re-emit it on warm scrapes
+//     so the *_status_info series stay alive between full scrapes.
+//
+// Trade-off: a status flip is visible to alerting only at the next full
+// scrape — i.e. max staleness = --ibswinfo.static-cache-ttl. The
+// alternative (drop the cache entirely) restored real-time visibility
+// at the cost of running the full ibswinfo every scrape, which is the
+// 2-3 s/switch hit we introduced the cache to avoid.
 type ibswinfoCacheEntry struct {
 	PartNumber      string
 	SerialNumber    string
 	PSID            string
 	FirmwareVersion string
+	PSUStatuses     []psuStatus
+	FanStatus       string
 	lastRefresh     time.Time
+}
+
+// psuStatus carries the status strings of a single PSU. PowerW is
+// excluded because it is a vitals reading, refreshed every scrape.
+type psuStatus struct {
+	ID        string
+	Status    string
+	DCPower   string
+	FanStatus string
 }
 
 // ibswinfoStaticCache is a package-global keyed by GUID. It survives
@@ -271,20 +295,47 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 				if useVitals {
 					parseErr = parseIbswinfoVitals(ibswinfoOut, &ibswinfoData, s.logger)
 					if parseErr == nil {
-						// Merge the static fields we kept off the wire.
+						// Hardware identifiers + firmware: re-attach.
 						ibswinfoData.PartNumber = cached.PartNumber
 						ibswinfoData.SerialNumber = cached.SerialNumber
 						ibswinfoData.PSID = cached.PSID
 						ibswinfoData.FirmwareVersion = cached.FirmwareVersion
+						// Top-level fan status: re-attach.
+						ibswinfoData.FanStatus = cached.FanStatus
+						// Per-PSU status strings: merge by PSU ID. The vitals
+						// output emits the same PSU IDs but only carries
+						// PowerW; everything else is restored from cache.
+						statusByID := make(map[string]psuStatus, len(cached.PSUStatuses))
+						for _, p := range cached.PSUStatuses {
+							statusByID[p.ID] = p
+						}
+						for i := range ibswinfoData.PowerSupplies {
+							if cps, ok := statusByID[ibswinfoData.PowerSupplies[i].ID]; ok {
+								ibswinfoData.PowerSupplies[i].Status = cps.Status
+								ibswinfoData.PowerSupplies[i].DCPower = cps.DCPower
+								ibswinfoData.PowerSupplies[i].FanStatus = cps.FanStatus
+							}
+						}
 					}
 				} else {
 					parseErr = parse_ibswinfo(ibswinfoOut, &ibswinfoData, s.logger)
 					if parseErr == nil && *ibswinfoStaticCacheTTL > 0 {
+						psuStatuses := make([]psuStatus, 0, len(ibswinfoData.PowerSupplies))
+						for _, p := range ibswinfoData.PowerSupplies {
+							psuStatuses = append(psuStatuses, psuStatus{
+								ID:        p.ID,
+								Status:    p.Status,
+								DCPower:   p.DCPower,
+								FanStatus: p.FanStatus,
+							})
+						}
 						ibswinfoStaticCache.Store(device.GUID, ibswinfoCacheEntry{
 							PartNumber:      ibswinfoData.PartNumber,
 							SerialNumber:    ibswinfoData.SerialNumber,
 							PSID:            ibswinfoData.PSID,
 							FirmwareVersion: ibswinfoData.FirmwareVersion,
+							PSUStatuses:     psuStatuses,
+							FanStatus:       ibswinfoData.FanStatus,
 							lastRefresh:     time.Now(),
 						})
 					}
