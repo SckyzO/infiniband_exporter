@@ -1,0 +1,39 @@
+name: dependabot auto-merge
+
+# Auto-merge Dependabot PRs once required checks are green.
+# Policy:
+#   - patch + minor bumps     -> auto-merge (squash, branch deleted)
+#   - major bumps             -> left open for manual review
+#
+# Requires repo settings: allow_auto_merge=true and
+# delete_branch_on_merge=true (configured separately on the repo).
+#
+# Security note: the PR URL is passed via env (not interpolated into
+# the shell command) and the actor check `github.actor == 'dependabot[bot]'`
+# prevents the workflow from running on PRs from anyone else.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge (patch + minor)
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto --squash "$PR_URL"
