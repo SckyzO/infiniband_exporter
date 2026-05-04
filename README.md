@@ -66,12 +66,17 @@ docker run --rm \
     --collector.switch.port-state
 ```
 
-The container ships `infiniband-diags`. Pass `--device /dev/infiniband`
-(or `--privileged` if local permissions block device access) so the
-exporter can shell out to `ibnetdiscover` and `perfquery` against the
-host's IB stack. `ibswinfo` is **not** in the image — install it on
-the host and bind-mount it (`-v /usr/local/bin/ibswinfo.sh:/usr/local/bin/ibswinfo.sh:ro`)
-if you need that collector.
+The container bundles `infiniband-diags` **and** the
+[`ibswinfo`](https://github.com/SckyzO/ibswinfo) helper script
+(at `/usr/local/bin/ibswinfo.sh`), so `--collector.ibswinfo` works
+out-of-the-box. Pass `--device /dev/infiniband` (or `--privileged`
+if local permissions block device access) so the exporter can reach
+the host's IB stack. Bump the bundled ibswinfo by overriding
+`IBSWINFO_VERSION` at build time:
+
+```bash
+docker build --build-arg IBSWINFO_VERSION=v0.10.0 -t infiniband_exporter:custom .
+```
 
 ## Endpoints
 
