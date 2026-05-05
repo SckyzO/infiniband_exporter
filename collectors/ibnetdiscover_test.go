@@ -134,6 +134,14 @@ func TestIbnetdiscoverCollectorTimeout(t *testing.T) {
 }
 
 func TestIbnetdiscoverParse(t *testing.T) {
+	// 2.0 default flipped switchCollectPortState to true, which makes
+	// the parser keep `???` (down-port) lines and populate DownPorts.
+	// This test exercises the parsing of the "all up" fixture and
+	// keeps the historical empty-DownPorts expectation, so disable
+	// the flag here.
+	if _, err := kingpin.CommandLine.Parse([]string{"--no-collector.switch.port-state"}); err != nil {
+		t.Fatal(err)
+	}
 	expectedHCAs := []InfinibandDevice{
 		{Type: "CA", LID: "1432", GUID: "0x506b4b0300cc02a6", Rate: (25 * 4 * 125000000), RawRate: 1.2890625e+10, Name: "p0001 HCA-1", Switch: "ib-i4l1s01",
 			Uplinks: map[string]InfinibandUplink{

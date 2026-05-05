@@ -343,7 +343,7 @@ func TestIbswinfoCollectorError(t *testing.T) {
 	expected := `
 		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
 		# TYPE infiniband_exporter_collect_errors_total counter
-		infiniband_exporter_collect_errors_total{collector="ibswinfo"} 2
+		infiniband_exporter_collect_errors_total{collector="ibswinfo"} 4
 		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
 		# TYPE infiniband_exporter_collect_timeouts_total counter
 		infiniband_exporter_collect_timeouts_total{collector="ibswinfo"} 0
@@ -383,7 +383,7 @@ func TestIbswinfoCollectorErrorRunonce(t *testing.T) {
 	expected := `
 		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
 		# TYPE infiniband_exporter_collect_errors_total counter
-		infiniband_exporter_collect_errors_total{collector="ibswinfo-runonce"} 2
+		infiniband_exporter_collect_errors_total{collector="ibswinfo-runonce"} 4
 		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
 		# TYPE infiniband_exporter_collect_timeouts_total counter
 		infiniband_exporter_collect_timeouts_total{collector="ibswinfo-runonce"} 0
@@ -415,7 +415,7 @@ func TestIbswinfoCollectorTimeout(t *testing.T) {
 		infiniband_exporter_collect_errors_total{collector="ibswinfo"} 0
 		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
 		# TYPE infiniband_exporter_collect_timeouts_total counter
-		infiniband_exporter_collect_timeouts_total{collector="ibswinfo"} 2
+		infiniband_exporter_collect_timeouts_total{collector="ibswinfo"} 4
 	`
 	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)

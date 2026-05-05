@@ -358,7 +358,7 @@ func TestHCACollectorError(t *testing.T) {
 	expected := `
 		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
 		# TYPE infiniband_exporter_collect_errors_total counter
-		infiniband_exporter_collect_errors_total{collector="hca"} 2
+		infiniband_exporter_collect_errors_total{collector="hca"} 4
 		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
 		# TYPE infiniband_exporter_collect_timeouts_total counter
 		infiniband_exporter_collect_timeouts_total{collector="hca"} 0
@@ -386,7 +386,7 @@ func TestHCACollectorErrorRunonce(t *testing.T) {
 	expected := `
 		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
 		# TYPE infiniband_exporter_collect_errors_total counter
-		infiniband_exporter_collect_errors_total{collector="hca-runonce"} 2
+		infiniband_exporter_collect_errors_total{collector="hca-runonce"} 4
 		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
 		# TYPE infiniband_exporter_collect_timeouts_total counter
 		infiniband_exporter_collect_timeouts_total{collector="hca-runonce"} 0
@@ -417,7 +417,7 @@ func TestHCACollectorTimeout(t *testing.T) {
 		infiniband_exporter_collect_errors_total{collector="hca"} 0
 		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
 		# TYPE infiniband_exporter_collect_timeouts_total counter
-		infiniband_exporter_collect_timeouts_total{collector="hca"} 2
+		infiniband_exporter_collect_timeouts_total{collector="hca"} 4
 	`
 	collector := NewHCACollector(&hcaDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)

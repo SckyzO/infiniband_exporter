@@ -12,22 +12,26 @@ optional `ibswinfo` helper for unmanaged switches. Exposes them on a
 
 ## Quick start
 
-> **Recommended command line for a typical fabric.** `--collector.hca`
-> and `--collector.switch.port-state` are off by default for upstream
-> compatibility but most operators want them; the rest are tuned for a
-> ≤50-switch HDR fabric. Adjust the `*.max-concurrent` flags upward on
-> bigger sites.
+> **Recommended command line for a typical fabric.** Switch + HCA +
+> port-state are on by default since 2.0. The only opt-in left is
+> `ibswinfo` (depends on the external helper script) and the retry
+> knob (worth setting on noisy fabrics — see
+> [`MIGRATION_2.0.md`](MIGRATION_2.0.md)).
 
 ```bash
 infiniband_exporter \
-    --collector.hca \
-    --collector.switch.port-state \
     --collector.ibswinfo \
     --ibswinfo.path=/usr/local/bin/ibswinfo.sh \
-    --perfquery.max-concurrent=4 \
-    --ibswinfo.max-concurrent=4 \
+    --perfquery.retries=1 \
     --web.listen-address=:9315
 ```
+
+The defaults you don't see above (`--collector.switch=true`,
+`--collector.hca=true`, `--collector.switch.port-state=true`,
+`--perfquery.max-concurrent=4`, `--ibnetdiscover.cache-ttl=5m`,
+`--ibswinfo.static-cache-ttl=5m`) are correct for most fabrics.
+Run `infiniband_exporter --help` for the full list and per-flag
+descriptions.
 
 To deploy:
 
@@ -62,9 +66,11 @@ docker run --rm \
     --device /dev/infiniband \
     -p 9315:9315 \
     ghcr.io/sckyzo/infiniband_exporter:latest \
-    --collector.hca \
-    --collector.switch.port-state
+    --collector.ibswinfo
 ```
+
+(Switch / HCA / port-state are on by default since 2.0. `ibswinfo`
+is the only collector you still have to opt in.)
 
 The container bundles `infiniband-diags` **and** the
 [`ibswinfo`](https://github.com/SckyzO/ibswinfo) helper script

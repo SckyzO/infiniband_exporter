@@ -1,3 +1,69 @@
+## 2.0.0 / 2026-05-05
+
+First major bump. **Breaking changes** — see
+[`MIGRATION_2.0.md`](MIGRATION_2.0.md) for the find-and-replace
+recipes.
+
+### Breaking — metric renames (Counter type)
+
+Two top-level meta-metrics graduated from per-scrape Gauge to true
+cumulative Counter, with the conventional `_total` suffix. The
+gauge form was misleading: the name suggested "counter", which made
+`rate()` and `increase()` silently return wrong numbers, and
+Prometheus printed a warning on every query.
+
+* `infiniband_exporter_collect_errors` (Gauge)
+  → `infiniband_exporter_collect_errors_total` (Counter)
+* `infiniband_exporter_collect_timeouts` (Gauge)
+  → `infiniband_exporter_collect_timeouts_total` (Counter)
+
+The shipped `examples/prometheus/rules/infiniband_alerts.yml` was
+updated to counter semantics. If you imported your own custom
+alerts, see the migration guide.
+
+### Breaking — flag defaults flipped
+
+Two flags now default to `true`. The "off by default" stance was
+too conservative — most operators want both, and the alert pack
+that ships with the exporter assumes both are on.
+
+* `--collector.hca` : `false` → **`true`**
+* `--collector.switch.port-state` : `false` → **`true`**
+
+To revert to pre-2.0 behaviour, pass `--no-collector.hca` and/or
+`--no-collector.switch.port-state` explicitly.
+
+### Features (non-breaking)
+
+* `--perfquery.retries=N` (default 0). Bounded retry on transient
+  perfquery failures — typically `exit 255: ibwarn: _do_madrpc:
+  recv failed` from a busy SMA. `context.DeadlineExceeded` is
+  never retried (our timeout fired, another tick won't help).
+  First-attempt failures log at DEBUG; only the final failure
+  emits ERROR. Set `--perfquery.retries=1` on noisy fabrics to
+  absorb most transients without losing a scrape.
+* `--perfquery.retry-delay=200ms` (default).
+* `infiniband_exporter_collect_retries_total{collector}` (Counter)
+  exposes how often the retry path actually triggered.
+
+### Bug fixes
+
+* `ibswinfoStaticCache` now evicts stale GUIDs at the end of each
+  successful scrape. Previously the cache grew monotonically as
+  switches were replaced over the fabric's lifetime — confirmed
+  memory leak, low impact unless you go through many switch
+  replacements but worth fixing for hygiene.
+* New regression test
+  `TestIbswinfoCollectorCacheEvictsStaleGUIDs` shrinks the device
+  list between two scrapes and asserts the cache shrinks too.
+
+### New alert (info-level)
+
+`IBHCAScrapeErrorRateElevated` (also added without a tag bump
+between 1.1 and 2.0): `increase(collect_errors_total{collector="hca"}
+[1h]) > 5` for 30 m. Surfaces fabric drift before the operator has
+to read syslog.
+
 ## 1.1.0 / 2026-05-05
 
 Polish release. No breaking changes: existing flags and metrics keep
