@@ -1,3 +1,72 @@
+## 2.0.1 / 2026-05-05
+
+Patch release — no breaking changes. Bundles the doc/dashboard
+polish + a few fixes that were spotted while validating 2.0.0 on a
+real fabric.
+
+### New metric
+
+* `infiniband_exporter_build_info{version, revision, branch,
+  goversion, builddate, builduser}` exposes the version stamped at
+  link time (`-ldflags -X github.com/prometheus/common/version.*`).
+  The stdlib `go_build_info` still ships, but its `version` field
+  is the Go-module pseudo-version (e.g.
+  `v1.1.1-0.20260505101131-e8773cd9...`) and rarely matches the
+  git tag — operators were getting confused. Dashboards now use
+  ours.
+
+### Bug fixes
+
+* **HCA detail dashboard handles duplicate names.** The single
+  `$hca` template variable selected all devices sharing the same
+  `hca` label (notably the four "Mellanox Technologies Aggregation
+  Node" SHARP nodes). Switched to a chained `$hca` + `$guid`
+  variable model — the second dropdown disambiguates when several
+  GUIDs share a name.
+* **Three dashboards were missing UIDs**, which broke the dashboard
+  link dropdown for them. Added `ib-switch-detail`,
+  `ib-hca-detail`, `ib-exporter-internals`.
+* **Dashboard link bar was rendering each tagged dashboard twice.**
+  Two `links` entries were declared per dashboard, both with
+  `type: "dashboards"` and `tags: ["infiniband"]`, so Grafana
+  rendered every tagged dashboard once per entry. Replaced with a
+  single `asDropdown: true` entry — one compact "InfiniBand
+  dashboards" button in the header.
+* **Residual recording-rule references** in two of the new
+  dashboards (`02-switch-detail` Port state table, `04-health`).
+  Inlined `infiniband:switch_port_ever_connected` as
+  `max_over_time(infiniband_switch_port_state[7d]) == 1` so the
+  dashboards stay self-contained per the documented policy.
+
+### Dashboards
+
+* **Renumbered with prefix ordering** so the file listing matches
+  the operational order of the user journey:
+  `00-fabric-overview-{small,large}`, `01-switch-fleet`,
+  `02-switch-detail`, `03-hca-detail`, `04-health`,
+  `05-environmental`, `06-and-node-exporter`,
+  `07-exporter-internals`. UIDs unchanged — existing links keep
+  working.
+* **Three new dashboards**:
+  - `01-infiniband-switch-fleet` — one row per switch with
+    throughput, error rate and ibswinfo health columns. Sortable
+    by error rate.
+  - `04-infiniband-health` — "what's wrong with the fabric right
+    now". Open this when an alert fires.
+  - `05-infiniband-environmental` — temperature, fan RPM, PSU
+    watts, hardware inventory.
+* **Switch detail** got a richer top row (Links UP / Links DOWN
+  added, no green/red — a port being down can simply mean
+  unplugged) and a redesigned Port state table joining
+  `port_state` + `uplink_info` + `port_rate_bytes_per_second`.
+
+### Documentation
+
+* `docs/dashboards.md` updated for the new file names and the
+  three new dashboards.
+* `docs/alerts.md` aligned with the 2.0 default flag flips that
+  the matrix had not yet caught up with.
+
 ## 2.0.0 / 2026-05-05
 
 First major bump. **Breaking changes** — see
