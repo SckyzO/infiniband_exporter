@@ -35,10 +35,8 @@ var (
 	// instead of the fragile `absent()` recipes that disappearing
 	// metrics force. Adapted from upstream PR #37 (metfan1981).
 	switchCollectPortState = kingpin.Flag("collector.switch.port-state", "Emit infiniband_switch_port_state (1=up, 0=down). Required by the IBSwitchPortDown alert (default: enabled).").Default("true").Bool()
-	// Cumulative counters — package-level so they survive across
-	// scrapes (Prometheus rebuilds the SwitchCollector on every HTTP
-	// request via setupGathers). Errors and timeouts went from gauge
-	// (per-scrape) to true counter (since startup) in 2.0.
+	// Package-level so the counters survive across scrapes — every
+	// HTTP request rebuilds the SwitchCollector via setupGathers().
 	switchRetriesTotal  atomic.Uint64
 	switchErrorsTotal   atomic.Uint64
 	switchTimeoutsTotal atomic.Uint64

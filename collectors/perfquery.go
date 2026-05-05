@@ -29,13 +29,9 @@ import (
 )
 
 var (
-	perfqueryPath    = kingpin.Flag("perfquery.path", "Path to the perfquery binary (default: perfquery, resolved via $PATH).").Default("perfquery").String()
-	perfqueryTimeout = kingpin.Flag("perfquery.timeout", "Timeout for one perfquery execution (default: 5s).").Default("5s").Duration()
-	maxConcurrent    = kingpin.Flag("perfquery.max-concurrent", "Max number of concurrent perfquery executions (default: 4). Bump for large fabrics.").Default("4").Int()
-	// Retry on transient perfquery failures (typically MAD-recv timeouts
-	// when the target SMA is busy). 0 disables retry; the historical
-	// behaviour. context.DeadlineExceeded is never retried (ours, not
-	// the IB stack's).
+	perfqueryPath       = kingpin.Flag("perfquery.path", "Path to the perfquery binary (default: perfquery, resolved via $PATH).").Default("perfquery").String()
+	perfqueryTimeout    = kingpin.Flag("perfquery.timeout", "Timeout for one perfquery execution (default: 5s).").Default("5s").Duration()
+	maxConcurrent       = kingpin.Flag("perfquery.max-concurrent", "Max number of concurrent perfquery executions (default: 4). Bump for large fabrics.").Default("4").Int()
 	perfqueryRetries    = kingpin.Flag("perfquery.retries", "Number of retries on transient perfquery failures (default: 0, no retry).").Default("0").Int()
 	perfqueryRetryDelay = kingpin.Flag("perfquery.retry-delay", "Delay between perfquery retries (default: 200ms).").Default("200ms").Duration()
 	PerfqueryExec       = perfquery

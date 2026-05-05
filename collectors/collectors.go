@@ -35,12 +35,6 @@ var (
 		prometheus.BuildFQName(namespace, "exporter", "collector_duration_seconds"),
 		"Collector time duration.",
 		[]string{"collector"}, nil)
-	// Cumulative counters — accumulate since process start. Renamed
-	// from `_errors` / `_timeouts` (gauge, per-scrape) in 2.0; the
-	// gauge semantics produced misleading PromQL warnings ("metric
-	// might not be a counter") and made `rate()` queries silently
-	// wrong. With true counters, `rate()` and `increase()` work as
-	// expected.
 	collectErrorsTotal = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "exporter", "collect_errors_total"),
 		"Total number of collection errors observed since the exporter started.",

@@ -50,21 +50,11 @@ var (
 // vitals=true requests the lightweight `-o vitals` output mode.
 type IbswinfoExecFunc func(lid string, vitals bool, ctx context.Context) (string, error)
 
-// ibswinfoCacheEntry stores the fields that the lightweight `-o vitals`
-// output does not carry. Two flavours of fields:
-//
-//   - Truly static (hardware identifiers, firmware version): they
-//     practically never change between scrapes.
-//   - Status fields (PSU/fan health strings): they DO change when
-//     hardware fails, but the vitals output drops them. We keep the
-//     last-known full-scrape value here and re-emit it on warm scrapes
-//     so the *_status_info series stay alive between full scrapes.
-//
-// Trade-off: a status flip is visible to alerting only at the next full
-// scrape — i.e. max staleness = --ibswinfo.static-cache-ttl. The
-// alternative (drop the cache entirely) restored real-time visibility
-// at the cost of running the full ibswinfo every scrape, which is the
-// 2-3 s/switch hit we introduced the cache to avoid.
+// ibswinfoCacheEntry stores the fields the `-o vitals` output drops:
+// hardware identifiers (truly static) and PSU/fan status strings
+// (re-emitted on warm scrapes). Trade-off: a status flip surfaces only
+// at the next full scrape, so max alerting staleness equals
+// --ibswinfo.static-cache-ttl.
 type ibswinfoCacheEntry struct {
 	PartNumber      string
 	SerialNumber    string
@@ -90,9 +80,7 @@ type psuStatus struct {
 // state is reset each time. ibnetdiscoverCache uses the same pattern.
 var ibswinfoStaticCache sync.Map // map[guid]ibswinfoCacheEntry
 
-// Cumulative counters — same pattern as switch.go and hca.go.
-// Errors and timeouts went from gauge (per-scrape) to counter
-// (cumulative since startup) in 2.0.
+// Package-level so the counters survive across scrapes (see switch.go).
 var (
 	ibswinfoErrorsTotal   atomic.Uint64
 	ibswinfoTimeoutsTotal atomic.Uint64
@@ -302,16 +290,16 @@ func (s *IbswinfoCollector) collect() []Ibswinfo {
 				if useVitals {
 					parseErr = parseIbswinfoVitals(ibswinfoOut, &ibswinfoData, s.logger)
 					if parseErr == nil {
-						// Hardware identifiers + firmware: re-attach.
+						// Re-attach static + status fields the vitals
+						// output dropped.
 						ibswinfoData.PartNumber = cached.PartNumber
 						ibswinfoData.SerialNumber = cached.SerialNumber
 						ibswinfoData.PSID = cached.PSID
 						ibswinfoData.FirmwareVersion = cached.FirmwareVersion
-						// Top-level fan status: re-attach.
 						ibswinfoData.FanStatus = cached.FanStatus
-						// Per-PSU status strings: merge by PSU ID. The vitals
-						// output emits the same PSU IDs but only carries
-						// PowerW; everything else is restored from cache.
+						// Vitals carries only PowerW per PSU; the rest
+						// (Status / DCPower / FanStatus) is restored
+						// from cache and merged by PSU ID.
 						statusByID := make(map[string]psuStatus, len(cached.PSUStatuses))
 						for _, p := range cached.PSUStatuses {
 							statusByID[p.ID] = p
@@ -361,12 +349,8 @@ func (s *IbswinfoCollector) collect() []Ibswinfo {
 	}
 	wg.Wait()
 	close(limit)
-	// Evict cache entries for switches that disappeared from the
-	// fabric. Without this, the cache grows monotonically and leaks
-	// memory on fabrics with switch churn (replacements, lab
-	// reshuffles). Bounded by the size of the current device list,
-	// not the historical one. Skipped when caching is disabled
-	// (the cache is then always empty anyway).
+	// Drop cache entries for switches no longer in the fabric, else
+	// the cache leaks memory across switch replacements.
 	if *ibswinfoStaticCacheTTL > 0 {
 		seen := make(map[string]struct{}, len(*s.devices))
 		for _, d := range *s.devices {

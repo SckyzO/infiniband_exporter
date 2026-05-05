@@ -415,14 +415,9 @@ func TestCollectToFile(t *testing.T) {
 	}
 	outputPath = tmpDir + "/output"
 	defer os.RemoveAll(tmpDir)
-	// --ibnetdiscover.cache-ttl=0 disables the topology cache so each
-	// sub-test sees the freshly mocked IbnetdiscoverExec result. The 1.1
-	// default of 5m would otherwise let earlier sub-tests' results leak
-	// into later ones (the cache survives across kingpin.Parse calls).
-	// 2.0 defaults flipped --collector.hca and
-	// --collector.switch.port-state to true. This test asserts
-	// switch-only fixtures, so disable both here. Both are
-	// unit-tested in the collectors package.
+	// cache-ttl=0 keeps the mocked IbnetdiscoverExec honoured between
+	// sub-tests. --no-collector.{hca,switch.port-state} keeps the
+	// fixture switch-only — both collectors have their own unit tests.
 	if _, err := kingpin.CommandLine.Parse([]string{
 		fmt.Sprintf("--exporter.output=%s", outputPath),
 		"--exporter.runonce",

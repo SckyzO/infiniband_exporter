@@ -31,9 +31,7 @@ var (
 	CollectHCA       = kingpin.Flag("collector.hca", "Enable the HCA collector — emits per-HCA-port perfquery counters (default: enabled).").Default("true").Bool()
 	hcaCollectBase   = kingpin.Flag("collector.hca.base-metrics", "Collect base perfquery counters on HCA ports (default: enabled). Has effect only when --collector.hca is on.").Default("true").Bool()
 	hcaCollectRcvErr = kingpin.Flag("collector.hca.rcv-err-details", "Collect PortRcvErrorDetails on HCA ports — adds one perfquery -E call per port, slow on large fabrics (default: disabled).").Default("false").Bool()
-	// Cumulative counters — same pattern as switch.go. Errors and
-	// timeouts went from gauge (per-scrape) to counter (cumulative
-	// since startup) in 2.0.
+	// Package-level so the counters survive across scrapes (see switch.go).
 	hcaRetriesTotal  atomic.Uint64
 	hcaErrorsTotal   atomic.Uint64
 	hcaTimeoutsTotal atomic.Uint64

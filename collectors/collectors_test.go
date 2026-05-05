@@ -49,15 +49,10 @@ var (
 )
 
 func SetIbnetdiscoverExec(t *testing.T, setErr bool, timeout bool) {
-	// Reset the package-global topology cache so a previous test's
-	// successful run does not short-circuit the mocked exec we are
-	// about to install. The cache TTL default flipped from 0 to 5m in
-	// 1.1; without this reset, every test reachable after a successful
-	// scrape would inherit cached topology and bypass IbnetdiscoverExec.
+	// Both globals carry state across scrapes (topology cache + cumulative
+	// counters), so reset them before installing the new mock — otherwise
+	// the previous test's data leaks into this one's assertions.
 	resetIbnetdiscoverCache()
-	// Reset cumulative counters too. They went from gauge (per-scrape)
-	// to counter (since startup) in 2.0, so without a reset the values
-	// from earlier tests leak into the assertions of later ones.
 	resetCumulativeCounters()
 	IbnetdiscoverExec = func(ctx context.Context) (string, error) {
 		if setErr {
@@ -76,9 +71,8 @@ func SetIbnetdiscoverExec(t *testing.T, setErr bool, timeout bool) {
 }
 
 func SetPerfqueryExecs(t *testing.T, setErr bool, timeout bool) {
-	// Reset the per-collector cumulative counters so that errors /
-	// timeouts / retries from prior tests don't leak into the current
-	// one's assertions. New in 2.0 (counters survive across scrapes).
+	// Cumulative counters survive across scrapes (see switch.go); reset
+	// before installing the new mock so previous tests don't leak.
 	resetCumulativeCounters()
 	PerfqueryExec = func(guid string, port string, extraArgs []string, ctx context.Context) (string, error) {
 		if setErr {
@@ -210,11 +204,8 @@ func TestEndToEndPipeline(t *testing.T) {
 	}
 }
 
-// resetCumulativeCounters zeroes every package-level Counter that
-// survives across scrapes. Called from test setup helpers so each
-// test starts from a clean slate (matters since 2.0, when errors,
-// timeouts and retries went from per-scrape gauges to cumulative
-// counters).
+// resetCumulativeCounters zeroes every package-level counter that
+// survives across scrapes, so each test starts from a clean slate.
 func resetCumulativeCounters() {
 	switchErrorsTotal.Store(0)
 	switchTimeoutsTotal.Store(0)

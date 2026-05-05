@@ -36,13 +36,9 @@ var (
 	ibnetdiscoverPath    = kingpin.Flag("ibnetdiscover.path", "Path to the ibnetdiscover binary (default: ibnetdiscover, resolved via $PATH).").Default("ibnetdiscover").String()
 	nodeNameMap          = kingpin.Flag("ibnetdiscover.node-name-map", "Path to a node name map file passed to ibnetdiscover -m (default: empty, no map).").Default("").String()
 	ibnetdiscoverTimeout = kingpin.Flag("ibnetdiscover.timeout", "Timeout for one ibnetdiscover execution (default: 20s).").Default("20s").Duration()
-	// On a large fabric (>100 switches) ibnetdiscover takes ~10 s per
-	// scrape. With a non-zero TTL the parsed topology is reused across
-	// scrapes; only the perfquery counters are re-collected each time.
-	// 5m default (since 1.1) means a switch added/removed shows up
-	// within 5 minutes, while saving the discovery cost on the other 9
-	// scrapes out of 10 (assuming a 30 s scrape interval). Set to 0 if
-	// you need topology changes reflected on the very next scrape.
+	// On large fabrics (>100 switches) ibnetdiscover takes ~10 s; the
+	// cache trades topology freshness (max staleness = TTL) for that
+	// time on every cache hit.
 	ibnetdiscoverCacheTTL = kingpin.Flag("ibnetdiscover.cache-ttl", "TTL for caching the ibnetdiscover topology (default: 5m). 0 disables the cache and re-runs ibnetdiscover every scrape.").Default("5m").Duration()
 	// IB Lane Rate Specification: {signaling rate, effective rate}, Gbps
 	//	https://en.wikipedia.org/wiki/InfiniBand#Performance
@@ -107,9 +103,7 @@ type ibnetdiscoverCacheT struct {
 
 var ibnetdiscoverCache ibnetdiscoverCacheT
 
-// Cumulative counters — same pattern as switch.go and hca.go.
-// Errors and timeouts went from gauge (per-scrape) to counter
-// (cumulative since startup) in 2.0.
+// Package-level so the counters survive across scrapes (see switch.go).
 var (
 	ibnetdiscoverErrorsTotal   atomic.Uint64
 	ibnetdiscoverTimeoutsTotal atomic.Uint64
