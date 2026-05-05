@@ -530,13 +530,16 @@ func TestCollect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error GET %s: %s", metricsEndpoint, err.Error())
 	}
-	// Strip noise we cannot pin: per-scrape duration, and the always-on
-	// build_info collector (registered as part of the standard exporter
-	// surface from v0.14.0 onward).
+	// Strip noise we cannot pin: per-scrape duration, and the
+	// always-on build_info metrics (Go's go_build_info and ours,
+	// infiniband_exporter_build_info, both register version/branch/
+	// revision labels whose values depend on the build environment).
 	re := regexp.MustCompile(`(?m)^.*infiniband_exporter_collector_duration_seconds.*$`)
 	body = re.ReplaceAllString(body, "")
 	buildInfoRe := regexp.MustCompile(`(?m)^.*go_build_info.*$`)
 	body = buildInfoRe.ReplaceAllString(body, "")
+	ourBuildRe := regexp.MustCompile(`(?m)^.*infiniband_exporter_build_info.*$`)
+	body = ourBuildRe.ReplaceAllString(body, "")
 	body = strings.TrimSpace(body)
 	body = regexp.MustCompile(`\n{2,}`).ReplaceAllString(body, "\n")
 	expectedIbnetdiscoverError = runonceRe.ReplaceAllString(expectedIbnetdiscoverError, "")

@@ -66,7 +66,7 @@
       "id": 1,
       "type": "stat",
       "title": "Build version",
-      "description": "Version of the running exporter (from go_build_info).",
+      "description": "Version of the running exporter, sourced from `infiniband_exporter_build_info` (link-time `-ldflags -X` stamps). `go_build_info`'s `version` field is the Go-module pseudo-version and rarely matches the git tag, so it is not used here.",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -83,7 +83,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "go_build_info{instance=~\"$instance\"}",
+          "expr": "infiniband_exporter_build_info{instance=~\"$instance\"}",
           "instant": true,
           "legendFormat": "{{version}}",
           "refId": "A"

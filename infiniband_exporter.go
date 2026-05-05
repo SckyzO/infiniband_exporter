@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
 	"github.com/gofrs/flock"
@@ -53,8 +54,18 @@ var (
 func setupGathers(runonce bool, logger *slog.Logger) prometheus.Gatherer {
 	registry := prometheus.NewRegistry()
 
-	// Always expose build_info — surface version, revision, and Go toolchain
-	// to operators without requiring a separate scrape job.
+	// `infiniband_exporter_build_info` carries the version stamped at
+	// link time (-ldflags -X), which is the only source of truth for
+	// what release of *this* program is running. The stdlib
+	// `go_build_info` is the Go-module pseudo-version and rarely
+	// matches the git tag, so it is misleading to operators — keep it
+	// for completeness but use ours in dashboards.
+	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "infiniband_exporter_build_info",
+		Help: "Constant 1 with version / revision / branch / goversion / builddate / builduser as labels. Sourced from the linker-time stamps, not from runtime/debug.",
+	}, []string{"version", "revision", "branch", "goversion", "builddate", "builduser"})
+	buildInfo.WithLabelValues(version.Version, version.Revision, version.Branch, runtime.Version(), version.BuildDate, version.BuildUser).Set(1)
+	registry.MustRegister(buildInfo)
 	registry.MustRegister(collectors.NewBuildInfoCollector())
 	if !runonce && !*disableExporterMetrics {
 		// Go and Process collectors are not useful in runonce/textfile mode
