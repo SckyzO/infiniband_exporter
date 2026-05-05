@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"log/slog"
 
@@ -31,8 +32,59 @@ var (
 	perfqueryPath    = kingpin.Flag("perfquery.path", "Path to the perfquery binary (default: perfquery, resolved via $PATH).").Default("perfquery").String()
 	perfqueryTimeout = kingpin.Flag("perfquery.timeout", "Timeout for one perfquery execution (default: 5s).").Default("5s").Duration()
 	maxConcurrent    = kingpin.Flag("perfquery.max-concurrent", "Max number of concurrent perfquery executions (default: 4). Bump for large fabrics.").Default("4").Int()
-	PerfqueryExec    = perfquery
+	// Retry on transient perfquery failures (typically MAD-recv timeouts
+	// when the target SMA is busy). 0 disables retry; the historical
+	// behaviour. context.DeadlineExceeded is never retried (ours, not
+	// the IB stack's).
+	perfqueryRetries    = kingpin.Flag("perfquery.retries", "Number of retries on transient perfquery failures (default: 0, no retry).").Default("0").Int()
+	perfqueryRetryDelay = kingpin.Flag("perfquery.retry-delay", "Delay between perfquery retries (default: 200ms).").Default("200ms").Duration()
+	PerfqueryExec       = perfquery
 )
+
+// perfqueryWithRetry wraps PerfqueryExec with bounded retry on transient
+// errors. Each attempt gets its own --perfquery.timeout budget. Returns
+// the final output, the final error (nil on success), and the number of
+// retries actually consumed (0 on first-shot success).
+//
+// Retry policy:
+//   - retries == 0 ⇒ identical to PerfqueryExec (no behaviour change).
+//   - context.DeadlineExceeded is NOT retried: if our local timeout
+//     fired, the IB stack is sluggish and another tick won't help.
+//   - Any other non-nil error (typically `exit status 255: ibwarn:
+//     _do_madrpc: recv failed`) IS retried up to `retries` times.
+func perfqueryWithRetry(guid string, port string, extraArgs []string, logger *slog.Logger) (string, error, int) {
+	maxRetries := *perfqueryRetries
+	delay := *perfqueryRetryDelay
+	timeout := *perfqueryTimeout
+
+	var (
+		out      string
+		err      error
+		attempts int
+	)
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		out, err = PerfqueryExec(guid, port, extraArgs, ctx)
+		cancel()
+		if err == nil {
+			return out, nil, attempts
+		}
+		if err == context.DeadlineExceeded {
+			return out, err, attempts
+		}
+		if attempts >= maxRetries {
+			return out, err, attempts
+		}
+		attempts++
+		logger.Debug("perfquery transient failure, retrying",
+			"attempt", attempts,
+			"max", maxRetries,
+			"guid", guid,
+			"port", port,
+			"err", err)
+		time.Sleep(delay)
+	}
+}
 
 type PerfQueryCounters struct {
 	device     InfinibandDevice

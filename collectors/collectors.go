@@ -43,6 +43,11 @@ var (
 		prometheus.BuildFQName(namespace, "exporter", "collect_timeouts"),
 		"Number of timeouts that occurred during collection",
 		[]string{"collector"}, nil)
+	// True counter — accumulates since process start. New in 2.0.
+	collectRetriesTotal = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "exporter", "collect_retries_total"),
+		"Total number of perfquery retries triggered since the exporter started. Each retry follows a transient failure (typically `_do_madrpc: recv failed` from a busy SMA).",
+		[]string{"collector"}, nil)
 	lastExecution = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "exporter", "last_execution"),
 		"Last execution time of exporter", []string{"collector"}, nil)

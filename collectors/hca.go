@@ -31,6 +31,9 @@ var (
 	CollectHCA       = kingpin.Flag("collector.hca", "Enable the HCA collector — emits per-HCA-port perfquery counters (default: disabled).").Default("false").Bool()
 	hcaCollectBase   = kingpin.Flag("collector.hca.base-metrics", "Collect base perfquery counters on HCA ports (default: enabled). Has effect only when --collector.hca is on.").Default("true").Bool()
 	hcaCollectRcvErr = kingpin.Flag("collector.hca.rcv-err-details", "Collect PortRcvErrorDetails on HCA ports — adds one perfquery -E call per port, slow on large fabrics (default: disabled).").Default("false").Bool()
+	// Cumulative retry counter (--perfquery.retries). Package-level so
+	// it survives across scrapes.
+	hcaRetriesTotal atomic.Uint64
 )
 
 type HCACollector struct {
@@ -135,6 +138,7 @@ func (h *HCACollector) Collect(ch chan<- prometheus.Metric) {
 	}
 	ch <- prometheus.MustNewConstMetric(collectErrors, prometheus.GaugeValue, errors, h.collector)
 	ch <- prometheus.MustNewConstMetric(collecTimeouts, prometheus.GaugeValue, timeouts, h.collector)
+	ch <- prometheus.MustNewConstMetric(collectRetriesTotal, prometheus.CounterValue, float64(hcaRetriesTotal.Load()), h.collector)
 	ch <- prometheus.MustNewConstMetric(collectDuration, prometheus.GaugeValue, time.Since(collectTime).Seconds(), h.collector)
 	if strings.HasSuffix(h.collector, "-runonce") {
 		ch <- prometheus.MustNewConstMetric(lastExecution, prometheus.GaugeValue, float64(time.Now().Unix()), h.collector)
@@ -158,20 +162,20 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 				<-limit
 				wg.Done()
 			}()
-			ctxExtended, cancelExtended := context.WithTimeout(context.Background(), *perfqueryTimeout)
-			defer cancelExtended()
 			ports := getDevicePorts(device.Uplinks)
 			perfqueryPorts := strings.Join(ports, ",")
 			start := time.Now()
-			extendedOut, err := PerfqueryExec(device.GUID, perfqueryPorts, []string{"-l", "-x"}, ctxExtended)
+			extendedOut, err, retries := perfqueryWithRetry(device.GUID, perfqueryPorts, []string{"-l", "-x"}, h.logger)
 			metric := HCAMetrics{duration: time.Since(start).Seconds()}
+			hcaRetriesTotal.Add(uint64(retries))
 			if err == context.DeadlineExceeded {
 				metric.timeout = 1
 				h.logger.Error("Timeout collecting extended perfquery counters", "guid", device.GUID)
 				atomic.AddUint64(&timeouts, 1)
 			} else if err != nil {
 				metric.error = 1
-				h.logger.Error("Error collecting extended perfquery counters", "guid", device.GUID, "err", err)
+				h.logger.Error("Error collecting extended perfquery counters",
+					"guid", device.GUID, "retries", retries, "err", err)
 				atomic.AddUint64(&errors, 1)
 			}
 			if err != nil {
@@ -190,11 +194,10 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 					// Per-iteration scope so the timeout context cancels at
 					// the end of each port query, not at goroutine return.
 					func() {
-						ctxRcvErr, cancelRcvErr := context.WithTimeout(context.Background(), *perfqueryTimeout)
-						defer cancelRcvErr()
 						rcvErrStart := time.Now()
-						rcvErrOut, err := PerfqueryExec(device.GUID, deviceCounter.PortSelect, []string{"-E"}, ctxRcvErr)
+						rcvErrOut, err, retries := perfqueryWithRetry(device.GUID, deviceCounter.PortSelect, []string{"-E"}, h.logger)
 						metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
+						hcaRetriesTotal.Add(uint64(retries))
 						if err == context.DeadlineExceeded {
 							metric.rcvErrTimeout = 1
 							h.logger.Error("Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
@@ -202,7 +205,8 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 							return
 						} else if err != nil {
 							metric.rcvErrError = 1
-							h.logger.Error("Error collecting rcvErr perfquery counters", "guid", device.GUID, "err", err)
+							h.logger.Error("Error collecting rcvErr perfquery counters",
+								"guid", device.GUID, "retries", retries, "err", err)
 							atomic.AddUint64(&errors, 1)
 							return
 						}

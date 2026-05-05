@@ -262,3 +262,105 @@ func TestPerfqueryTimeout(t *testing.T) {
 		t.Errorf("Unexpected out: %s", out)
 	}
 }
+
+// TestPerfqueryWithRetrySuccess: first call returns OK, no retry.
+func TestPerfqueryWithRetrySuccess(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--perfquery.retries=2", "--perfquery.retry-delay=1ms"}); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	PerfqueryExec = func(guid string, port string, args []string, ctx context.Context) (string, error) {
+		calls++
+		return "ok", nil
+	}
+	out, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if out != "ok" || retries != 0 || calls != 1 {
+		t.Errorf("got out=%q retries=%d calls=%d, want out=ok retries=0 calls=1", out, retries, calls)
+	}
+}
+
+// TestPerfqueryWithRetryRecover: 2 transient failures, then success.
+// Verifies the retry budget is consumed but the call eventually succeeds.
+func TestPerfqueryWithRetryRecover(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--perfquery.retries=3", "--perfquery.retry-delay=1ms"}); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	PerfqueryExec = func(guid string, port string, args []string, ctx context.Context) (string, error) {
+		calls++
+		if calls < 3 {
+			return "", fmt.Errorf("transient: _do_madrpc: recv failed")
+		}
+		return "ok", nil
+	}
+	out, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if out != "ok" || retries != 2 || calls != 3 {
+		t.Errorf("got out=%q retries=%d calls=%d, want out=ok retries=2 calls=3", out, retries, calls)
+	}
+}
+
+// TestPerfqueryWithRetryExhausted: retries exhausted, final error returned.
+func TestPerfqueryWithRetryExhausted(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--perfquery.retries=1", "--perfquery.retry-delay=1ms"}); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	PerfqueryExec = func(guid string, port string, args []string, ctx context.Context) (string, error) {
+		calls++
+		return "", fmt.Errorf("transient")
+	}
+	_, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	if err == nil {
+		t.Fatalf("expected error after retries exhausted")
+	}
+	if retries != 1 || calls != 2 {
+		t.Errorf("got retries=%d calls=%d, want retries=1 calls=2", retries, calls)
+	}
+}
+
+// TestPerfqueryWithRetryNoRetryOnDeadline: context.DeadlineExceeded must
+// not be retried — if our local timeout fired, the IB stack is sluggish
+// and another attempt won't help.
+func TestPerfqueryWithRetryNoRetryOnDeadline(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--perfquery.retries=3", "--perfquery.retry-delay=1ms"}); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	PerfqueryExec = func(guid string, port string, args []string, ctx context.Context) (string, error) {
+		calls++
+		return "", context.DeadlineExceeded
+	}
+	_, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	if err != context.DeadlineExceeded {
+		t.Fatalf("expected DeadlineExceeded, got %v", err)
+	}
+	if retries != 0 || calls != 1 {
+		t.Errorf("got retries=%d calls=%d, want retries=0 calls=1 (deadline must not retry)", retries, calls)
+	}
+}
+
+// TestPerfqueryWithRetryDisabledByDefault: retries=0 reproduces the
+// pre-2.0 single-shot behaviour.
+func TestPerfqueryWithRetryDisabledByDefault(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--perfquery.retries=0"}); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	PerfqueryExec = func(guid string, port string, args []string, ctx context.Context) (string, error) {
+		calls++
+		return "", fmt.Errorf("transient")
+	}
+	_, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if retries != 0 || calls != 1 {
+		t.Errorf("got retries=%d calls=%d, want retries=0 calls=1", retries, calls)
+	}
+}
