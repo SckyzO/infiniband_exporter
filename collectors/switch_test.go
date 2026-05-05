@@ -172,8 +172,8 @@ func TestSwitchCollector(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 91 {
-		t.Errorf("Unexpected collection count %d, expected 91", val)
+	} else if val != 92 {
+		t.Errorf("Unexpected collection count %d, expected 92", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
@@ -373,8 +373,8 @@ func TestSwitchCollectorFull(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 115 {
-		t.Errorf("Unexpected collection count %d, expected 115", val)
+	} else if val != 116 {
+		t.Errorf("Unexpected collection count %d, expected 116", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
@@ -444,8 +444,8 @@ func TestSwitchCollectorNoBase(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 27 {
-		t.Errorf("Unexpected collection count %d, expected 27", val)
+	} else if val != 28 {
+		t.Errorf("Unexpected collection count %d, expected 28", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
@@ -485,8 +485,8 @@ func TestSwitchCollectorError(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 25 {
-		t.Errorf("Unexpected collection count %d, expected 25", val)
+	} else if val != 26 {
+		t.Errorf("Unexpected collection count %d, expected 26", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
@@ -513,8 +513,8 @@ func TestSwitchCollectorErrorRunonce(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 26 {
-		t.Errorf("Unexpected collection count %d, expected 26", val)
+	} else if val != 27 {
+		t.Errorf("Unexpected collection count %d, expected 27", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
@@ -541,8 +541,8 @@ func TestSwitchCollectorTimeout(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 25 {
-		t.Errorf("Unexpected collection count %d, expected 25", val)
+	} else if val != 26 {
+		t.Errorf("Unexpected collection count %d, expected 26", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",

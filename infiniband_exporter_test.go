@@ -345,6 +345,9 @@ infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",
 # TYPE infiniband_exporter_collect_errors gauge
 infiniband_exporter_collect_errors{collector="ibnetdiscover-runonce"} 0
 infiniband_exporter_collect_errors{collector="switch-runonce"} 0
+# HELP infiniband_exporter_collect_retries_total Total number of perfquery retries triggered since the exporter started. Each retry follows a transient failure (typically ` + "`" + `_do_madrpc: recv failed` + "`" + ` from a busy SMA).
+# TYPE infiniband_exporter_collect_retries_total counter
+infiniband_exporter_collect_retries_total{collector="switch-runonce"} 0
 # HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
 # TYPE infiniband_exporter_collect_timeouts gauge
 infiniband_exporter_collect_timeouts{collector="ibnetdiscover-runonce"} 0
@@ -354,6 +357,10 @@ infiniband_exporter_collect_timeouts{collector="switch-runonce"} 0`
 infiniband_exporter_collect_errors{collector="hca-runonce"} 0
 infiniband_exporter_collect_errors{collector="ibnetdiscover-runonce"} 0
 infiniband_exporter_collect_errors{collector="switch-runonce"} 0
+# HELP infiniband_exporter_collect_retries_total Total number of perfquery retries triggered since the exporter started. Each retry follows a transient failure (typically ` + "`" + `_do_madrpc: recv failed` + "`" + ` from a busy SMA).
+# TYPE infiniband_exporter_collect_retries_total counter
+infiniband_exporter_collect_retries_total{collector="hca-runonce"} 0
+infiniband_exporter_collect_retries_total{collector="switch-runonce"} 0
 # HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
 # TYPE infiniband_exporter_collect_timeouts gauge
 infiniband_exporter_collect_timeouts{collector="hca-runonce"} 0

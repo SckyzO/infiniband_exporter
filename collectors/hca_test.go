@@ -159,8 +159,8 @@ func TestHCACollector(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 63 {
-		t.Errorf("Unexpected collection count %d, expected 63", val)
+	} else if val != 64 {
+		t.Errorf("Unexpected collection count %d, expected 64", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
@@ -326,8 +326,8 @@ func TestHCACollectorFull(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 81 {
-		t.Errorf("Unexpected collection count %d, expected 81", val)
+	} else if val != 82 {
+		t.Errorf("Unexpected collection count %d, expected 82", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
@@ -367,8 +367,8 @@ func TestHCACollectorError(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 19 {
-		t.Errorf("Unexpected collection count %d, expected 19", val)
+	} else if val != 20 {
+		t.Errorf("Unexpected collection count %d, expected 20", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
@@ -395,8 +395,8 @@ func TestHCACollectorErrorRunonce(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 20 {
-		t.Errorf("Unexpected collection count %d, expected 20", val)
+	} else if val != 21 {
+		t.Errorf("Unexpected collection count %d, expected 21", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
@@ -423,8 +423,8 @@ func TestHCACollectorTimeout(t *testing.T) {
 	gatherers := setupGatherer(collector)
 	if val, err := testutil.GatherAndCount(gatherers); err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	} else if val != 19 {
-		t.Errorf("Unexpected collection count %d, expected 19", val)
+	} else if val != 20 {
+		t.Errorf("Unexpected collection count %d, expected 20", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
