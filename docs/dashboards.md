@@ -8,12 +8,15 @@ flow.
 
 | File | UID | When to use |
 | --- | --- | --- |
-| `infiniband-fabric-overview-small.json` | `ib-fabric-overview-small` | 2–40 switches. Per-switch lines remain readable. |
-| `infiniband-fabric-overview-large.json` | `ib-fabric-overview-large` | 40+ switches. Heatmap for temperatures, `topk(20)` for ranked panels, min/avg/max stats. |
-| `infiniband-switch-detail.json` | `ib-switch-detail` | Drill-down per switch (variable `$switch`). Same dashboard regardless of fabric size — already scoped. |
-| `infiniband-hca-detail.json` | `ib-hca-detail` | Drill-down per HCA (variable `$hca`). |
-| `infiniband-exporter-internals.json` | `ib-exporter-internals` | Health of the exporter process itself — collector latency, scrape errors, Go runtime. |
-| `infiniband_and_node_exporter.json` | `ib-and-node` | **Management node combo.** Combines node_exporter (CPU, RAM, load, filesystem, IB driver counters) with the exporter's own scrape metrics. Useful when both run on the same management host (typical setup). |
+| `00-infiniband-fabric-overview-small.json` | `ib-fabric-overview-small` | 2–40 switches. Per-switch lines remain readable. |
+| `00-infiniband-fabric-overview-large.json` | `ib-fabric-overview-large` | 40+ switches. Heatmap for temperatures, `topk(20)` for ranked panels, min/avg/max stats. |
+| `01-infiniband-switch-fleet.json` | `ib-switch-fleet` | Tabular view of every switch with throughput, error rate and ibswinfo health columns. Use to scan the whole fabric in one page. |
+| `02-infiniband-switch-detail.json` | `ib-switch-detail` | Drill-down per switch (variable `$switch`). Same dashboard regardless of fabric size — already scoped. |
+| `03-infiniband-hca-detail.json` | `ib-hca-detail` | Drill-down per HCA (variable `$hca`). |
+| `04-infiniband-health.json` | `ib-health` | "What's wrong" dashboard. Down switches/HCAs/ports, error trends, link-downed events, top noisy ports. Open this when an alert fires. |
+| `05-infiniband-environmental.json` | `ib-environmental` | Temperature, fan RPM, PSU watts, hardware inventory. Requires `--collector.ibswinfo`. |
+| `06-infiniband-and-node-exporter.json` | `ib-and-node` | **Management node combo.** Combines node_exporter (CPU, RAM, load, filesystem, IB driver counters) with the exporter's own scrape metrics. Useful when both run on the same management host (typical setup). |
+| `07-infiniband-exporter-internals.json` | `ib-exporter-internals` | Health of the exporter process itself — collector latency, scrape errors, Go runtime. |
 
 ## Importing
 

@@ -1,0 +1,110 @@
+{
+  "__inputs": [
+    {"name": "DS_PROMETHEUS", "label": "Prometheus", "description": "Prometheus data source scraping infiniband_exporter.", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus"}
+  ],
+  "__elements": {},
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0"},
+    {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "One row per switch in the fabric, with all key metrics (throughput, errors, hardware) at a glance. Use to scan the entire fabric in one page; drill down via the Switch detail dashboard for the per-port view.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [
+    {"title": "Switch detail", "url": "/d/ib-switch-detail", "type": "dashboards", "tags": ["infiniband"]},
+    {"title": "Fabric overview", "url": "/d/ib-fabric-overview-small", "type": "dashboards", "tags": ["infiniband"]}
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Switches",
+      "description": "One row per switch. Tx/Rx are the sum of all switch-port byte rates over the last $__rate_interval. Errors/s aggregates the headline error counters per switch. Temperature, PSU and fan columns require --collector.ibswinfo.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 22, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_up", "instant": true, "format": "table", "refId": "Up"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum by (switch) (rate(infiniband_switch_port_transmit_data_bytes_total[$__rate_interval]))", "instant": true, "format": "table", "refId": "Tx"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum by (switch) (rate(infiniband_switch_port_receive_data_bytes_total[$__rate_interval]))", "instant": true, "format": "table", "refId": "Rx"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum by (switch) (rate(infiniband_switch_port_symbol_error_total[$__rate_interval]) + rate(infiniband_switch_port_link_downed_total[$__rate_interval]) + rate(infiniband_switch_port_receive_errors_total[$__rate_interval]) + rate(infiniband_switch_port_transmit_discards_total[$__rate_interval]))", "instant": true, "format": "table", "refId": "Errs"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_temperature_celsius", "instant": true, "format": "table", "refId": "Temp"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "count by (switch) (infiniband_switch_power_supply_status_info{status!~\"OK|ok\"})", "instant": true, "format": "table", "refId": "PSUFail"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "count by (switch) (infiniband_switch_fan_status_info{status!~\"OK|ok\"})", "instant": true, "format": "table", "refId": "FanFail"}
+      ],
+      "transformations": [
+        {"id": "joinByField", "options": {"byField": "switch", "mode": "outer"}},
+        {"id": "organize", "options": {
+          "excludeByName": {"Time": true, "Time 1": true, "Time 2": true, "Time 3": true, "Time 4": true, "Time 5": true, "Time 6": true, "Time 7": true, "__name__": true, "instance": true, "job": true, "guid": true, "status": true},
+          "indexByName": {"switch": 0, "Value #Up": 1, "Value #Tx": 2, "Value #Rx": 3, "Value #Errs": 4, "Value #Temp": 5, "Value #PSUFail": 6, "Value #FanFail": 7},
+          "renameByName": {
+            "switch": "Switch",
+            "Value #Up": "Up",
+            "Value #Tx": "Tx",
+            "Value #Rx": "Rx",
+            "Value #Errs": "Errors/s",
+            "Value #Temp": "Temp",
+            "Value #PSUFail": "PSU fail",
+            "Value #FanFail": "Fan fail"
+          }
+        }}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"align": "auto", "cellOptions": {"type": "auto"}}
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Up"}, "properties": [
+            {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+            {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}},
+            {"id": "mappings", "value": [{"type": "value", "options": {"0": {"text": "DOWN"}, "1": {"text": "UP"}}}]},
+            {"id": "custom.width", "value": 70}
+          ]},
+          {"matcher": {"id": "byName", "options": "Tx"}, "properties": [{"id": "unit", "value": "Bps"}]},
+          {"matcher": {"id": "byName", "options": "Rx"}, "properties": [{"id": "unit", "value": "Bps"}]},
+          {"matcher": {"id": "byName", "options": "Errors/s"}, "properties": [
+            {"id": "unit", "value": "short"},
+            {"id": "decimals", "value": 3},
+            {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "gradient"}},
+            {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.001}, {"color": "red", "value": 1}]}}
+          ]},
+          {"matcher": {"id": "byName", "options": "Temp"}, "properties": [
+            {"id": "unit", "value": "celsius"},
+            {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+            {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}
+          ]},
+          {"matcher": {"id": "byName", "options": "PSU fail"}, "properties": [
+            {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+            {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}},
+            {"id": "custom.width", "value": 90}
+          ]},
+          {"matcher": {"id": "byName", "options": "Fan fail"}, "properties": [
+            {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+            {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}},
+            {"id": "custom.width", "value": 90}
+          ]}
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "footer": {"show": false},
+        "sortBy": [{"displayName": "Errors/s", "desc": true}]
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["infiniband", "fabric", "switch"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "InfiniBand — Switch fleet",
+  "uid": "ib-switch-fleet",
+  "version": 1,
+  "weekStart": ""
+}

@@ -1,0 +1,152 @@
+{
+  "__inputs": [
+    {"name": "DS_PROMETHEUS", "label": "Prometheus", "description": "Prometheus data source scraping infiniband_exporter.", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus"}
+  ],
+  "__elements": {},
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0"},
+    {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "timeseries", "name": "Time series", "version": ""},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "What's wrong with the fabric right now. Open this when an alert fires: it surfaces all error counters trending up, all ports down, and the burst patterns of the last 24h. Drill-down via the Switch detail dashboard for the per-port view.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [
+    {"title": "Switch fleet", "url": "/d/ib-switch-fleet", "type": "dashboards", "tags": ["infiniband"]},
+    {"title": "Switch detail", "url": "/d/ib-switch-detail", "type": "dashboards", "tags": ["infiniband"]}
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Switches down",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "count(infiniband_switch_up == 0) OR vector(0)", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 2, "type": "stat", "title": "HCAs down",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "count(infiniband_hca_up == 0) OR vector(0)", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 3, "type": "stat", "title": "Ports down (was up)",
+      "description": "Switch ports currently DOWN that have been seen UP in the last 7 days. Filters out never-cabled ports. Requires --collector.switch.port-state.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "count(infiniband_switch_port_state == 0 and on(guid, port) infiniband:switch_port_ever_connected) OR vector(0)", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 4, "type": "stat", "title": "Symbol errors / min",
+      "description": "Fabric-wide rate of port_symbol_error_total over the last $__rate_interval, expressed per minute. Healthy fabric: 0. Sustained > 0 = a lane is degrading.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_symbol_error_total[$__rate_interval])) * 60", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value", "graphMode": "area"},
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 1, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 100}]}}}
+    },
+    {
+      "id": 5, "type": "stat", "title": "LinkDowned events / hour",
+      "description": "Link recovery process failed and the link went down. Rare on a healthy fabric; > 1/hour means a flapping cable / SFP somewhere.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(increase(infiniband_switch_port_link_downed_total[1h]))", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}}
+    },
+    {
+      "id": 6, "type": "stat", "title": "Scrape errors / hour",
+      "description": "Cumulative collection errors observed by the exporter in the last hour. Most often transient `_do_madrpc: recv failed`. >5 sustained = fabric drift.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(increase(infiniband_exporter_collect_errors_total[1h]))", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 50}]}}}
+    },
+    {
+      "id": 10, "type": "table", "title": "Ports currently DOWN (was up in last 7d)",
+      "description": "Persistently-down ports that need investigation. Empty = fabric is healthy on this front. Requires --collector.switch.port-state and the recording-rules pack.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_port_state == 0 and on(guid, port) infiniband:switch_port_ever_connected", "instant": true, "format": "table", "refId": "A"}],
+      "transformations": [
+        {"id": "organize", "options": {
+          "excludeByName": {"Time": true, "Value": true, "__name__": true, "instance": true, "job": true, "guid": true},
+          "indexByName": {"switch": 0, "port": 1},
+          "renameByName": {"switch": "Switch", "port": "Port"}
+        }}
+      ],
+      "options": {"showHeader": true, "footer": {"show": false}}
+    },
+    {
+      "id": 11, "type": "table", "title": "Components in non-OK state (PSU / fan / DC power)",
+      "description": "Hardware-side faults from ibswinfo. Empty = all healthy. Requires --collector.ibswinfo.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "label_replace(infiniband_switch_power_supply_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU status\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_dc_power_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"DC power\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU fan\", \"switch\", \".*\") or label_replace(infiniband_switch_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"Switch fan\", \"switch\", \".*\")", "instant": true, "format": "table", "refId": "A"}
+      ],
+      "transformations": [
+        {"id": "organize", "options": {
+          "excludeByName": {"Time": true, "Value": true, "__name__": true, "instance": true, "job": true, "guid": true},
+          "indexByName": {"kind": 0, "switch": 1, "psu": 2, "status": 3}
+        }}
+      ],
+      "options": {"showHeader": true, "footer": {"show": false}}
+    },
+    {
+      "id": 20, "type": "timeseries", "title": "Top 10 switches by error rate (24h)",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_symbol_error_total[$__rate_interval]) + rate(infiniband_switch_port_link_downed_total[$__rate_interval]) + rate(infiniband_switch_port_link_error_recovery_total[$__rate_interval]) + rate(infiniband_switch_port_receive_errors_total[$__rate_interval]) + rate(infiniband_switch_port_transmit_discards_total[$__rate_interval])))", "legendFormat": "{{switch}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 2}}},
+      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 21, "type": "timeseries", "title": "LinkDowned events per switch (1h increase)",
+      "description": "Number of times the link recovery process failed during the last hour. A flapping port shows up as steady steps here.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (increase(infiniband_switch_port_link_downed_total[1h])) > 0)", "legendFormat": "{{switch}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1}}},
+      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 30, "type": "timeseries", "title": "Top 10 ports by symbol error rate",
+      "description": "Per-port resolution. The port that climbs above the others is the one to investigate first (cable, SFP, peer).",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, rate(infiniband_switch_port_symbol_error_total[$__rate_interval]) > 0)", "legendFormat": "{{switch}} port {{port}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 0, "lineWidth": 2}}},
+      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["infiniband", "health", "errors"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "InfiniBand — Health & errors",
+  "uid": "ib-health",
+  "version": 1,
+  "weekStart": ""
+}
