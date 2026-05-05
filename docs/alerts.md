@@ -34,8 +34,8 @@ never fire.
 | Alert(s) | Source metric | Required exporter flag(s) |
 | --- | --- | --- |
 | `IBSwitchScrapeFailing` | `infiniband_switch_up` | `--collector.switch` (default: enabled) |
-| `IBHCAScrapeFailing` | `infiniband_hca_up` | `--collector.hca` (default: disabled — turn on) |
-| `IBSwitchPortDown` | `infiniband_switch_port_state` | `--collector.switch.port-state` (default: disabled — turn on) |
+| `IBHCAScrapeFailing` | `infiniband_hca_up` | `--collector.hca` (default: enabled since 2.0) |
+| `IBSwitchPortDown` | `infiniband_switch_port_state` | `--collector.switch.port-state` (default: enabled since 2.0) |
 | `IBPortStateMetricMissing` | absence of the above | none — meta-alert that catches the case where the flag is missing |
 | `IBPortLinkDownedRising`, `IBPortSymbolErrorBurst`, `IBPortRcvErrorRate`, `IBPortXmitDiscardRate`, `IBPortCongestionElevated` | per-port perfquery counters | `--collector.switch` + `--collector.switch.base-metrics` (both default: enabled) |
 | `IBSwitchTempHigh`, `IBSwitchTempCritical`, `IBPSUFailure`, `IBSwitchFanFailed` | `infiniband_switch_*` from ibswinfo | `--collector.ibswinfo` (default: disabled) and `ibswinfo.sh` resolvable via `--ibswinfo.path` |
@@ -63,8 +63,8 @@ never fire.
 The `IBSwitchPortDown` alert pairs `port_state == 0` with the
 `infiniband:switch_port_ever_connected` recording rule
 (`max_over_time(...[7d]) == 1`) so we don't page on ports that have
-never been wired. **Requires `--collector.switch.port-state` on the
-exporter.**
+never been wired. Requires `--collector.switch.port-state` on the
+exporter (default enabled since 2.0).
 
 `IBPortStateMetricMissing` (added in 1.1) is the safety net for that
 last requirement: it fires when the `port_state` series has not been
@@ -151,8 +151,9 @@ This alert pairs `infiniband_switch_port_state == 0` with
 `infiniband:switch_port_ever_connected` (a recording rule that flips
 on once the port has been seen up). It needs **both**:
 
-* The exporter started with `--collector.switch.port-state` (otherwise
-  no `port_state` series at all).
+* The exporter started with `--collector.switch.port-state` (default
+  enabled since 2.0; pass `--no-collector.switch.port-state` to opt
+  out and the alert becomes inoperative).
 * `infiniband_recording.yml` loaded by Prometheus — without
   `infiniband:switch_port_ever_connected` the right-hand side of the
   `and` is empty and the alert never fires.
