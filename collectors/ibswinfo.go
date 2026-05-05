@@ -354,6 +354,25 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 	}
 	wg.Wait()
 	close(limit)
+	// Evict cache entries for switches that disappeared from the
+	// fabric. Without this, the cache grows monotonically and leaks
+	// memory on fabrics with switch churn (replacements, lab
+	// reshuffles). Bounded by the size of the current device list,
+	// not the historical one. Skipped when caching is disabled
+	// (the cache is then always empty anyway).
+	if *ibswinfoStaticCacheTTL > 0 {
+		seen := make(map[string]struct{}, len(*s.devices))
+		for _, d := range *s.devices {
+			seen[d.GUID] = struct{}{}
+		}
+		ibswinfoStaticCache.Range(func(k, _ any) bool {
+			if _, ok := seen[k.(string)]; !ok {
+				ibswinfoStaticCache.Delete(k)
+				s.logger.Debug("Evicted stale ibswinfo cache entry", "guid", k)
+			}
+			return true
+		})
+	}
 	return ibswinfos, float64(errors), float64(timeouts)
 }
 

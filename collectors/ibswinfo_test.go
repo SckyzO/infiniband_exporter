@@ -755,3 +755,47 @@ func TestIbswinfoCollectorCacheDisabled(t *testing.T) {
 		t.Errorf("Expected %d full calls when TTL=0, got %d", want, got)
 	}
 }
+
+// TestIbswinfoCollectorCacheEvictsStaleGUIDs verifies that GUIDs no
+// longer present in the device list are removed from the cache. Without
+// this eviction the cache grows monotonically as switches are replaced
+// over the fabric's lifetime — confirmed memory leak prior to 2.0.
+func TestIbswinfoCollectorCacheEvictsStaleGUIDs(t *testing.T) {
+	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=15m"}); err != nil {
+		t.Fatal(err)
+	}
+	resetIbswinfoStaticCache()
+	defer resetIbswinfoStaticCache()
+	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
+		return ReadFixture("ibswinfo", "test1")
+	}
+
+	// First scrape with the full device list — populates the cache.
+	c1 := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
+	if _, err := testutil.GatherAndCount(setupGatherer(c1)); err != nil {
+		t.Fatal(err)
+	}
+	cacheSize := func() int {
+		n := 0
+		ibswinfoStaticCache.Range(func(_, _ any) bool { n++; return true })
+		return n
+	}
+	if got, want := cacheSize(), len(switchDevices); got != want {
+		t.Fatalf("after warm-up: cache holds %d entries, want %d", got, want)
+	}
+
+	// Second scrape with a SHRUNK device list — first switch is gone
+	// (e.g. decommissioned). Cache must shrink to match.
+	shrunk := []InfinibandDevice{switchDevices[1]}
+	c2 := NewIbswinfoCollector(&shrunk, false, slog.New(slog.DiscardHandler))
+	if _, err := testutil.GatherAndCount(setupGatherer(c2)); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := cacheSize(), 1; got != want {
+		t.Errorf("after eviction: cache holds %d entries, want %d (stale GUIDs not dropped)", got, want)
+	}
+	// And the surviving GUID is the right one.
+	if _, ok := ibswinfoStaticCache.Load(switchDevices[1].GUID); !ok {
+		t.Errorf("surviving GUID %q evicted by mistake", switchDevices[1].GUID)
+	}
+}
