@@ -49,6 +49,12 @@ var (
 )
 
 func SetIbnetdiscoverExec(t *testing.T, setErr bool, timeout bool) {
+	// Reset the package-global topology cache so a previous test's
+	// successful run does not short-circuit the mocked exec we are
+	// about to install. The cache TTL default flipped from 0 to 5m in
+	// 1.1; without this reset, every test reachable after a successful
+	// scrape would inherit cached topology and bypass IbnetdiscoverExec.
+	resetIbnetdiscoverCache()
 	IbnetdiscoverExec = func(ctx context.Context) (string, error) {
 		if setErr {
 			return "", fmt.Errorf("Error")
