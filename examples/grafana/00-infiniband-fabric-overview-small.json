@@ -11,21 +11,60 @@
   ],
   "__elements": {},
   "__requires": [
-    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0"},
-    {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"},
-    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
-    {"type": "panel", "id": "timeseries", "name": "Time series", "version": ""},
-    {"type": "panel", "id": "table", "name": "Table", "version": ""}
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
   ],
-  "annotations": {"list": []},
-  "description": "Fleet-wide health and throughput for an InfiniBand fabric scraped by SckyzO/infiniband_exporter. Sized for 2–40 switches; on larger fabrics use the -large variant which switches per-switch lines to heatmaps + topk.",
+  "annotations": {
+    "list": []
+  },
+  "description": "Fleet-wide health and throughput for an InfiniBand fabric scraped by SckyzO/infiniband_exporter. Sized for 2\u201340 switches; on larger fabrics use the -large variant which switches per-switch lines to heatmaps + topk.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
   "links": [
-    {"title": "Switch detail", "url": "/d/ib-switch-detail", "type": "dashboards", "tags": ["infiniband"]},
-    {"title": "HCA detail", "url": "/d/ib-hca-detail", "type": "dashboards", "tags": ["infiniband"]}
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "infiniband"
+      ],
+      "targetBlank": false,
+      "title": "InfiniBand dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
   ],
   "liveNow": false,
   "panels": [
@@ -33,21 +72,68 @@
       "id": 1,
       "type": "stat",
       "title": "Switches up",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(infiniband_switch_up)", "legendFormat": "up", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "count(infiniband_switch_up)", "legendFormat": "total", "refId": "B"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(infiniband_switch_up)",
+          "legendFormat": "up",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count(infiniband_switch_up)",
+          "legendFormat": "total",
+          "refId": "B"
+        }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name",
         "colorMode": "value",
         "orientation": "horizontal",
         "graphMode": "none"
       },
       "fieldConfig": {
-        "defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "color": {"mode": "thresholds"}},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
         "overrides": []
       }
     },
@@ -55,157 +141,588 @@
       "id": 2,
       "type": "stat",
       "title": "HCAs up",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(infiniband_hca_up)", "legendFormat": "up", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "count(infiniband_hca_up)", "legendFormat": "total", "refId": "B"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(infiniband_hca_up)",
+          "legendFormat": "up",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count(infiniband_hca_up)",
+          "legendFormat": "total",
+          "refId": "B"
+        }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name",
         "colorMode": "value",
         "orientation": "horizontal",
         "graphMode": "none"
       },
-      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "color": {"mode": "thresholds"}}, "overrides": []}
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "id": 3,
       "type": "stat",
       "title": "Fabric Tx",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[$__rate_interval]))", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[$__rate_interval]))",
+          "refId": "A"
+        }
       ],
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "colorMode": "value", "orientation": "auto", "graphMode": "area"},
-      "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []}
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "orientation": "auto",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "id": 4,
       "type": "stat",
       "title": "Fabric Rx",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[$__rate_interval]))", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[$__rate_interval]))",
+          "refId": "A"
+        }
       ],
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "colorMode": "value", "orientation": "auto", "graphMode": "area"},
-      "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []}
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "orientation": "auto",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "id": 5,
       "type": "timeseries",
       "title": "Fabric throughput",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[$__rate_interval]))", "legendFormat": "Tx", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[$__rate_interval]))", "legendFormat": "Rx", "refId": "B"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(rate(infiniband_switch_port_transmit_data_bytes_total[$__rate_interval]))",
+          "legendFormat": "Tx",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(rate(infiniband_switch_port_receive_data_bytes_total[$__rate_interval]))",
+          "legendFormat": "Rx",
+          "refId": "B"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "Bps", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineWidth": 1}}, "overrides": []},
-      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
     },
     {
       "id": 6,
       "type": "timeseries",
       "title": "Top 10 switches by error rate",
-      "description": "Sum of headline error counters (symbol, link_downed, link_recovery, rcv, discards, …) per switch.",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "description": "Sum of headline error counters (symbol, link_downed, link_recovery, rcv, discards, \u2026) per switch.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_symbol_error_total[$__rate_interval]) + rate(infiniband_switch_port_link_downed_total[$__rate_interval]) + rate(infiniband_switch_port_link_error_recovery_total[$__rate_interval]) + rate(infiniband_switch_port_receive_errors_total[$__rate_interval]) + rate(infiniband_switch_port_transmit_discards_total[$__rate_interval])))", "legendFormat": "{{switch}}", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_symbol_error_total[$__rate_interval]) + rate(infiniband_switch_port_link_downed_total[$__rate_interval]) + rate(infiniband_switch_port_link_error_recovery_total[$__rate_interval]) + rate(infiniband_switch_port_receive_errors_total[$__rate_interval]) + rate(infiniband_switch_port_transmit_discards_total[$__rate_interval])))",
+          "legendFormat": "{{switch}}",
+          "refId": "A"
+        }
       ],
-      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 0, "lineWidth": 2}}, "overrides": []},
-      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
     },
     {
       "id": 7,
       "type": "table",
       "title": "Switch hardware inventory",
       "description": "Requires --collector.ibswinfo. Empty otherwise.",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_hardware_info", "instant": true, "format": "table", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "infiniband_switch_hardware_info",
+          "instant": true,
+          "format": "table",
+          "refId": "A"
+        }
       ],
       "transformations": [
-        {"id": "organize", "options": {"excludeByName": {"Time": true, "Value": true, "__name__": true, "instance": true, "job": true}, "indexByName": {}, "renameByName": {}}}
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "instance": true,
+              "job": true
+            },
+            "indexByName": {},
+            "renameByName": {}
+          }
+        }
       ],
-      "options": {"showHeader": true, "footer": {"show": false}}
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      }
     },
     {
       "id": 8,
       "type": "timeseries",
       "title": "Switch ASIC temperatures",
       "description": "Requires --collector.ibswinfo.",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_switch_temperature_celsius", "legendFormat": "{{switch}}", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "infiniband_switch_temperature_celsius",
+          "legendFormat": "{{switch}}",
+          "refId": "A"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
-          "color": {"mode": "thresholds"},
-          "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1},
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "lineWidth": 1
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "single", "sort": "none"}}
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
     },
     {
       "id": 9,
       "type": "timeseries",
       "title": "Top 10 most congested switches (PortXmitWait)",
       "description": "PortXmitWait increments while there is data to transmit but no flow-control credits available. Sustained large rates indicate the switch is a bottleneck on a path.",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_wait_total[$__rate_interval])))", "legendFormat": "{{switch}}", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_wait_total[$__rate_interval])))",
+          "legendFormat": "{{switch}}",
+          "refId": "A"
+        }
       ],
-      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 2}}, "overrides": []},
-      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
     },
     {
       "id": 10,
       "type": "timeseries",
       "title": "Top 10 switches by packet rate (Tx)",
-      "description": "Top talkers by packets per second — small-message workloads (RDMA control, MPI all-to-all) often show up here even when the byte-rate panel does not.",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "description": "Top talkers by packets per second \u2014 small-message workloads (RDMA control, MPI all-to-all) often show up here even when the byte-rate panel does not.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_packets_total[$__rate_interval])))", "legendFormat": "{{switch}}", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "topk(10, sum by (switch) (rate(infiniband_switch_port_transmit_packets_total[$__rate_interval])))",
+          "legendFormat": "{{switch}}",
+          "refId": "A"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "pps", "color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 2}}, "overrides": []},
-      "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "right"}, "tooltip": {"mode": "multi", "sort": "desc"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
     },
     {
       "id": 11,
       "type": "table",
       "title": "Failed PSUs / fans",
       "description": "Lists every switch component currently reporting non-OK status. Empty table = all healthy. Requires --collector.ibswinfo.",
-      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "label_replace(infiniband_switch_power_supply_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU status\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_dc_power_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"DC power\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU fan\", \"switch\", \".*\") or label_replace(infiniband_switch_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"Switch fan\", \"switch\", \".*\")", "instant": true, "format": "table", "refId": "A"}
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(infiniband_switch_power_supply_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU status\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_dc_power_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"DC power\", \"switch\", \".*\") or label_replace(infiniband_switch_power_supply_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"PSU fan\", \"switch\", \".*\") or label_replace(infiniband_switch_fan_status_info{status!~\"OK|ok\"} == 1, \"kind\", \"Switch fan\", \"switch\", \".*\")",
+          "instant": true,
+          "format": "table",
+          "refId": "A"
+        }
       ],
       "transformations": [
-        {"id": "organize", "options": {"excludeByName": {"Time": true, "Value": true, "__name__": true, "instance": true, "job": true, "guid": true}, "indexByName": {"kind": 0, "switch": 1, "psu": 2, "status": 3}}}
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "guid": true
+            },
+            "indexByName": {
+              "kind": 0,
+              "switch": 1,
+              "psu": 2,
+              "status": 3
+            }
+          }
+        }
       ],
-      "options": {"showHeader": true, "footer": {"show": false}}
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      }
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["infiniband", "fabric"],
-  "templating": {"list": []},
-  "time": {"from": "now-1h", "to": "now"},
+  "tags": [
+    "infiniband",
+    "fabric"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "",
-  "title": "InfiniBand — Fabric Overview (small)",
+  "title": "InfiniBand \u2014 Fabric Overview (small)",
   "uid": "ib-fabric-overview-small",
   "version": 1,
   "weekStart": ""
