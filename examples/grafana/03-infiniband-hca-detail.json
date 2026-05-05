@@ -88,7 +88,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "infiniband_hca_up{hca=\"$hca\"}",
+          "expr": "infiniband_hca_up{hca=\"$hca\", guid=\"$guid\"}",
           "refId": "A"
         }
       ],
@@ -157,7 +157,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "infiniband_hca_port_rate_bytes_per_second{hca=\"$hca\"}",
+          "expr": "infiniband_hca_port_rate_bytes_per_second{hca=\"$hca\", guid=\"$guid\"}",
           "refId": "A"
         }
       ],
@@ -210,7 +210,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(infiniband_hca_port_transmit_data_bytes_total{hca=\"$hca\"}[$__rate_interval]))",
+          "expr": "sum(rate(infiniband_hca_port_transmit_data_bytes_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval]))",
           "refId": "A"
         }
       ],
@@ -263,7 +263,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(infiniband_hca_port_receive_data_bytes_total{hca=\"$hca\"}[$__rate_interval]))",
+          "expr": "sum(rate(infiniband_hca_port_receive_data_bytes_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval]))",
           "refId": "A"
         }
       ],
@@ -316,7 +316,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_transmit_data_bytes_total{hca=\"$hca\"}[$__rate_interval])",
+          "expr": "rate(infiniband_hca_port_transmit_data_bytes_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval])",
           "legendFormat": "port {{port}} Tx",
           "refId": "A"
         },
@@ -325,7 +325,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_receive_data_bytes_total{hca=\"$hca\"}[$__rate_interval])",
+          "expr": "rate(infiniband_hca_port_receive_data_bytes_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval])",
           "legendFormat": "port {{port}} Rx",
           "refId": "B"
         }
@@ -376,7 +376,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_unicast_transmit_packets_total{hca=\"$hca\"}[$__rate_interval])",
+          "expr": "rate(infiniband_hca_port_unicast_transmit_packets_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval])",
           "legendFormat": "port {{port}} ucast Tx",
           "refId": "A"
         },
@@ -385,7 +385,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_unicast_receive_packets_total{hca=\"$hca\"}[$__rate_interval])",
+          "expr": "rate(infiniband_hca_port_unicast_receive_packets_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval])",
           "legendFormat": "port {{port}} ucast Rx",
           "refId": "B"
         },
@@ -394,7 +394,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_multicast_transmit_packets_total{hca=\"$hca\"}[$__rate_interval])",
+          "expr": "rate(infiniband_hca_port_multicast_transmit_packets_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval])",
           "legendFormat": "port {{port}} mcast Tx",
           "refId": "C"
         }
@@ -445,7 +445,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_symbol_error_total{hca=\"$hca\"}[$__rate_interval]) > 0",
+          "expr": "rate(infiniband_hca_port_symbol_error_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval]) > 0",
           "legendFormat": "port {{port}} symbol",
           "refId": "A"
         },
@@ -454,7 +454,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_link_downed_total{hca=\"$hca\"}[$__rate_interval]) > 0",
+          "expr": "rate(infiniband_hca_port_link_downed_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval]) > 0",
           "legendFormat": "port {{port}} link_downed",
           "refId": "B"
         },
@@ -463,7 +463,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_receive_errors_total{hca=\"$hca\"}[$__rate_interval]) > 0",
+          "expr": "rate(infiniband_hca_port_receive_errors_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval]) > 0",
           "legendFormat": "port {{port}} rcv",
           "refId": "C"
         },
@@ -472,7 +472,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(infiniband_hca_port_transmit_discards_total{hca=\"$hca\"}[$__rate_interval]) > 0",
+          "expr": "rate(infiniband_hca_port_transmit_discards_total{hca=\"$hca\", guid=\"$guid\"}[$__rate_interval]) > 0",
           "legendFormat": "port {{port}} discards",
           "refId": "D"
         }
@@ -523,7 +523,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "infiniband_hca_uplink_info{hca=\"$hca\"}",
+          "expr": "infiniband_hca_uplink_info{hca=\"$hca\", guid=\"$guid\"}",
           "instant": true,
           "format": "table",
           "refId": "A"
@@ -568,7 +568,7 @@
         },
         "query": {
           "query": "label_values(infiniband_hca_info, hca)",
-          "refId": "StandardVariableQuery"
+          "refId": "HCAName"
         },
         "refresh": 1,
         "label": "HCA",
@@ -581,6 +581,30 @@
         "options": [],
         "multi": false,
         "includeAll": false
+      },
+      {
+        "name": "guid",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "query": {
+          "query": "label_values(infiniband_hca_info{hca=\"$hca\"}, guid)",
+          "refId": "HCAGuid"
+        },
+        "refresh": 1,
+        "label": "GUID",
+        "sort": 1,
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [],
+        "multi": false,
+        "includeAll": false,
+        "description": "Several HCAs can share the same name (notably the Mellanox SHARP Aggregation Nodes); pick the GUID to disambiguate."
       }
     ]
   },
@@ -591,7 +615,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "InfiniBand \u2014 HCA detail",
-  "uid": null,
+  "uid": "ib-hca-detail",
   "version": 1,
   "weekStart": ""
 }

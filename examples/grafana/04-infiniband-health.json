@@ -199,7 +199,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "count(infiniband_switch_port_state == 0 and on(guid, port) infiniband:switch_port_ever_connected) OR vector(0)",
+          "expr": "count(infiniband_switch_port_state == 0 and on(guid, port) (max_over_time(infiniband_switch_port_state[7d]) == 1)) OR vector(0)",
           "refId": "A"
         }
       ],
@@ -441,7 +441,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "infiniband_switch_port_state == 0 and on(guid, port) infiniband:switch_port_ever_connected",
+          "expr": "infiniband_switch_port_state == 0 and on(guid, port) (max_over_time(infiniband_switch_port_state[7d]) == 1)",
           "instant": true,
           "format": "table",
           "refId": "A"

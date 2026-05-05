@@ -501,7 +501,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "InfiniBand \u2014 Exporter internals",
-  "uid": null,
+  "uid": "ib-exporter-internals",
   "version": 1,
   "weekStart": ""
 }
