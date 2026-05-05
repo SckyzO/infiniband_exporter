@@ -408,7 +408,15 @@ func TestCollectToFile(t *testing.T) {
 	}
 	outputPath = tmpDir + "/output"
 	defer os.RemoveAll(tmpDir)
-	if _, err := kingpin.CommandLine.Parse([]string{fmt.Sprintf("--exporter.output=%s", outputPath), "--exporter.runonce"}); err != nil {
+	// --ibnetdiscover.cache-ttl=0 disables the topology cache so each
+	// sub-test sees the freshly mocked IbnetdiscoverExec result. The 1.1
+	// default of 5m would otherwise let earlier sub-tests' results leak
+	// into later ones (the cache survives across kingpin.Parse calls).
+	if _, err := kingpin.CommandLine.Parse([]string{
+		fmt.Sprintf("--exporter.output=%s", outputPath),
+		"--exporter.runonce",
+		"--ibnetdiscover.cache-ttl=0",
+	}); err != nil {
 		t.Fatal(err)
 	}
 	err = run(slog.New(slog.DiscardHandler))
@@ -434,7 +442,11 @@ func TestCollectToFile(t *testing.T) {
 
 func TestCollect(t *testing.T) {
 	var err error
-	if _, err = kingpin.CommandLine.Parse([]string{fmt.Sprintf("--web.listen-address=%s", address)}); err != nil {
+	// See TestCollectToFile for why --ibnetdiscover.cache-ttl=0.
+	if _, err = kingpin.CommandLine.Parse([]string{
+		fmt.Sprintf("--web.listen-address=%s", address),
+		"--ibnetdiscover.cache-ttl=0",
+	}); err != nil {
 		t.Fatal(err)
 	}
 	go func() {
@@ -456,7 +468,12 @@ func TestCollect(t *testing.T) {
 	if !strings.Contains(body, expectedSwitchNoError) {
 		t.Errorf("Unexpected body\nExpected:\n%s\nGot:\n%s\n", expectedSwitchNoError, body)
 	}
-	if _, err = kingpin.CommandLine.Parse([]string{"--no-collector.switch", "--collector.ibswinfo", fmt.Sprintf("--web.listen-address=%s", address)}); err != nil {
+	if _, err = kingpin.CommandLine.Parse([]string{
+		"--no-collector.switch",
+		"--collector.ibswinfo",
+		"--ibnetdiscover.cache-ttl=0",
+		fmt.Sprintf("--web.listen-address=%s", address),
+	}); err != nil {
 		t.Fatal(err)
 	}
 	body, err = queryExporter(metricsEndpoint)
@@ -466,7 +483,11 @@ func TestCollect(t *testing.T) {
 	if !strings.Contains(body, expectedIbswinfo) {
 		t.Errorf("Unexpected body\nExpected:\n%s\nGot:\n%s\n", expectedIbswinfo, body)
 	}
-	if _, err = kingpin.CommandLine.Parse([]string{"--collector.hca", fmt.Sprintf("--web.listen-address=%s", address)}); err != nil {
+	if _, err = kingpin.CommandLine.Parse([]string{
+		"--collector.hca",
+		"--ibnetdiscover.cache-ttl=0",
+		fmt.Sprintf("--web.listen-address=%s", address),
+	}); err != nil {
 		t.Fatal(err)
 	}
 	body, err = queryExporter(metricsEndpoint)
@@ -483,7 +504,11 @@ func TestCollect(t *testing.T) {
 	collectors.IbnetdiscoverExec = func(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("Error")
 	}
-	if _, err = kingpin.CommandLine.Parse([]string{"--web.disable-exporter-metrics", fmt.Sprintf("--web.listen-address=%s", address)}); err != nil {
+	if _, err = kingpin.CommandLine.Parse([]string{
+		"--web.disable-exporter-metrics",
+		"--ibnetdiscover.cache-ttl=0",
+		fmt.Sprintf("--web.listen-address=%s", address),
+	}); err != nil {
 		t.Fatal(err)
 	}
 	body, err = queryExporter(metricsEndpoint)

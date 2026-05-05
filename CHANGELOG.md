@@ -1,3 +1,90 @@
+## 1.1.0 / 2026-05-05
+
+Polish release. No breaking changes: existing flags and metrics keep
+the same names and semantics.
+
+### Defaults
+
+* `--perfquery.max-concurrent`: 1 → **4**. The hereditary upstream
+  value of 1 bottlenecked scrape time on any non-trivial fabric.
+  4 is the value most operators set by hand; perfquery is read-only
+  and lightweight.
+* `--ibnetdiscover.cache-ttl`: 0 → **5m**. Cache existed since 0.17
+  but was off by default. Topology rarely changes; 5 m saves an
+  ibnetdiscover call on ~9 of every 10 scrapes (assuming a 30 s
+  scrape interval).
+* `--ibswinfo.static-cache-ttl`: 15m → **5m**. With the 1.0.1 fix
+  that re-emits status_info from cache, this cuts the worst-case
+  detection delay for a PSU/fan flip from 15 to 5 minutes.
+
+All three remain overridable via the CLI; users on small fabrics or
+with strict operational requirements can still set 1, 0, or 0.
+
+### `--help` text overhaul
+
+Every flag description now states its default explicitly (`(default:
+enabled)` for booleans, `(default: 5m)` for values). Several
+descriptions also gained a one-line operational note (e.g. "Required
+by the IBSwitchPortDown alert", "slow on large fabrics").
+
+### Dashboards
+
+* Every `rate(...[5m])` switched to
+  [`$__rate_interval`](https://grafana.com/docs/grafana/latest/datasources/prometheus/template-variables)
+  — the Grafana-recommended template variable for Prometheus rate
+  queries. Computed as `max($__interval + scrape_interval, 4 *
+  scrape_interval)`, it guarantees at least 4 scrapes inside the
+  rate window so values do not under-estimate during sparse periods.
+  52 occurrences across all 6 dashboards.
+* `Failed PSUs / fans` panel rewrite already shipped in 1.0.1.
+
+### Recording rules
+
+Added the HCA-side counterparts of the existing switch error rules:
+
+* `infiniband:hca_port_symbol_errors:rate5m`
+* `infiniband:hca_port_link_downed:rate5m`
+* `infiniband:hca_port_receive_errors:rate5m`
+* `infiniband:hca_port_transmit_discards:rate5m`
+
+### Alerting
+
+* New `IBPortStateMetricMissing`
+  (`absent_over_time(infiniband_switch_port_state[30m])` for 30 m,
+  warning). Catches the silent-failure case where the rules are
+  deployed but the exporter is running without
+  `--collector.switch.port-state` — without this catch
+  `IBSwitchPortDown` is silently inoperative.
+
+### Documentation
+
+* `README.md` Quick start now shows the recommended command line
+  for a typical fabric (HCA + port-state + ibswinfo + tuned
+  concurrency).
+* `README.md` gains a Container subsection with the GHCR pull, the
+  required `--device /dev/infiniband` passthrough, and how to
+  override the bundled ibswinfo version at build time.
+* `docs/alerts.md` opens with a "Required exporter flags" matrix
+  cross-referencing every alert with the collector flag(s) it
+  depends on. Documents the new meta-alert.
+
+### Packaging
+
+* **Multi-arch Docker images** published to GitHub Container
+  Registry on every tag:
+  `ghcr.io/sckyzo/infiniband_exporter:1.1.0`
+  (and `…:latest`, `…:1.1.0-amd64`, `…:1.1.0-arm64`). Image is
+  debian:bookworm-slim + `infiniband-diags` + the
+  [`ibswinfo`](https://github.com/SckyzO/ibswinfo) helper script
+  (pinned to `v0.9.0`, overridable via `--build-arg
+  IBSWINFO_VERSION=…`). Architectures limited to amd64 + arm64
+  because Debian only packages `infiniband-diags` for those two;
+  the tarball release still covers ppc64le and s390x.
+* `Makefile` now stamps the binary with version, commit, branch,
+  build user and date via `-ldflags -X` (same `prometheus/common/version`
+  targets as `.goreleaser.yaml`). `make build VERSION=…` overrides;
+  the default uses `git describe --tags --dirty --always`.
+
 ## 1.0.1 / 2026-05-04
 
 Bug fix release — no API changes, no flag changes, no metric changes.
