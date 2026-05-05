@@ -52,13 +52,17 @@ Upload steps (per dashboard) on grafana.com:
 ## Dashboards rely on the exporter, not on the recording rules
 
 To keep grafana.com import clean, all dashboards use raw Prometheus
-expressions (`rate(infiniband_..._total[5m])`). They work on a vanilla
-Prometheus that does not yet have the recording rules from
-`examples/prometheus/rules/` loaded.
+expressions (`rate(infiniband_..._total[$__rate_interval])`). They
+work on a vanilla Prometheus that does not yet have the recording
+rules from `examples/prometheus/rules/` loaded. The recording rules
+exist primarily for the alert pack — alertmanager evaluates them
+continuously regardless of whether dashboards are open, so the
+compute cost is amortized there.
 
-If you do install the recording rules, you can swap the dashboards'
-expressions for the cheaper recording-rule names — see
-[alerts.md](alerts.md) for the list.
+For very large fabrics (>200 switches) where panel refresh times
+become noticeable, swap the heaviest panel queries (fabric-overview
+top-N error/xmit_wait) for their `infiniband:*:rate5m` recording
+rule equivalents — see [alerts.md](alerts.md) for the list.
 
 ## Caveats
 

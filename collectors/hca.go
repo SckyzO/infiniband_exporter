@@ -165,7 +165,7 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 			ports := getDevicePorts(device.Uplinks)
 			perfqueryPorts := strings.Join(ports, ",")
 			start := time.Now()
-			extendedOut, err, retries := perfqueryWithRetry(device.GUID, perfqueryPorts, []string{"-l", "-x"}, h.logger)
+			extendedOut, retries, err := perfqueryWithRetry(device.GUID, perfqueryPorts, []string{"-l", "-x"}, h.logger)
 			metric := HCAMetrics{duration: time.Since(start).Seconds()}
 			hcaRetriesTotal.Add(uint64(retries))
 			if err == context.DeadlineExceeded {
@@ -195,7 +195,7 @@ func (h *HCACollector) collect() ([]PerfQueryCounters, map[string]HCAMetrics, fl
 					// the end of each port query, not at goroutine return.
 					func() {
 						rcvErrStart := time.Now()
-						rcvErrOut, err, retries := perfqueryWithRetry(device.GUID, deviceCounter.PortSelect, []string{"-E"}, h.logger)
+						rcvErrOut, retries, err := perfqueryWithRetry(device.GUID, deviceCounter.PortSelect, []string{"-E"}, h.logger)
 						metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
 						hcaRetriesTotal.Add(uint64(retries))
 						if err == context.DeadlineExceeded {

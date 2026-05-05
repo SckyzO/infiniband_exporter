@@ -43,8 +43,8 @@ var (
 
 // perfqueryWithRetry wraps PerfqueryExec with bounded retry on transient
 // errors. Each attempt gets its own --perfquery.timeout budget. Returns
-// the final output, the final error (nil on success), and the number of
-// retries actually consumed (0 on first-shot success).
+// the final output, the number of retries actually consumed (0 on
+// first-shot success) and the final error (nil on success).
 //
 // Retry policy:
 //   - retries == 0 ⇒ identical to PerfqueryExec (no behaviour change).
@@ -52,7 +52,7 @@ var (
 //     fired, the IB stack is sluggish and another tick won't help.
 //   - Any other non-nil error (typically `exit status 255: ibwarn:
 //     _do_madrpc: recv failed`) IS retried up to `retries` times.
-func perfqueryWithRetry(guid string, port string, extraArgs []string, logger *slog.Logger) (string, error, int) {
+func perfqueryWithRetry(guid string, port string, extraArgs []string, logger *slog.Logger) (string, int, error) {
 	maxRetries := *perfqueryRetries
 	delay := *perfqueryRetryDelay
 	timeout := *perfqueryTimeout
@@ -67,13 +67,13 @@ func perfqueryWithRetry(guid string, port string, extraArgs []string, logger *sl
 		out, err = PerfqueryExec(guid, port, extraArgs, ctx)
 		cancel()
 		if err == nil {
-			return out, nil, attempts
+			return out, attempts, nil
 		}
 		if err == context.DeadlineExceeded {
-			return out, err, attempts
+			return out, attempts, err
 		}
 		if attempts >= maxRetries {
-			return out, err, attempts
+			return out, attempts, err
 		}
 		attempts++
 		logger.Debug("perfquery transient failure, retrying",

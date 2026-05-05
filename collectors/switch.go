@@ -185,7 +185,7 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 			ports := getDevicePorts(device.Uplinks)
 			perfqueryPorts := strings.Join(ports, ",")
 			start := time.Now()
-			extendedOut, err, retries := perfqueryWithRetry(device.GUID, perfqueryPorts, []string{"-l", "-x"}, s.logger)
+			extendedOut, retries, err := perfqueryWithRetry(device.GUID, perfqueryPorts, []string{"-l", "-x"}, s.logger)
 			metric := SwitchMetrics{duration: time.Since(start).Seconds()}
 			switchRetriesTotal.Add(uint64(retries))
 			if err == context.DeadlineExceeded {
@@ -217,7 +217,7 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 					// returns.
 					func() {
 						rcvErrStart := time.Now()
-						rcvErrOut, err, retries := perfqueryWithRetry(device.GUID, deviceCounter.PortSelect, []string{"-E"}, s.logger)
+						rcvErrOut, retries, err := perfqueryWithRetry(device.GUID, deviceCounter.PortSelect, []string{"-E"}, s.logger)
 						metric.rcvErrDuration = time.Since(rcvErrStart).Seconds()
 						switchRetriesTotal.Add(uint64(retries))
 						if err == context.DeadlineExceeded {

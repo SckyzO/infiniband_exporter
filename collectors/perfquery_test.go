@@ -273,7 +273,7 @@ func TestPerfqueryWithRetrySuccess(t *testing.T) {
 		calls++
 		return "ok", nil
 	}
-	out, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	out, retries, err := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -296,7 +296,7 @@ func TestPerfqueryWithRetryRecover(t *testing.T) {
 		}
 		return "ok", nil
 	}
-	out, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	out, retries, err := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -315,7 +315,7 @@ func TestPerfqueryWithRetryExhausted(t *testing.T) {
 		calls++
 		return "", fmt.Errorf("transient")
 	}
-	_, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	_, retries, err := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
 	if err == nil {
 		t.Fatalf("expected error after retries exhausted")
 	}
@@ -336,7 +336,7 @@ func TestPerfqueryWithRetryNoRetryOnDeadline(t *testing.T) {
 		calls++
 		return "", context.DeadlineExceeded
 	}
-	_, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	_, retries, err := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
 	if err != context.DeadlineExceeded {
 		t.Fatalf("expected DeadlineExceeded, got %v", err)
 	}
@@ -356,7 +356,7 @@ func TestPerfqueryWithRetryDisabledByDefault(t *testing.T) {
 		calls++
 		return "", fmt.Errorf("transient")
 	}
-	_, err, retries := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
+	_, retries, err := perfqueryWithRetry("guid", "1", nil, slog.New(slog.DiscardHandler))
 	if err == nil {
 		t.Fatalf("expected error")
 	}
