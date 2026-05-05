@@ -419,10 +419,14 @@ func TestCollectToFile(t *testing.T) {
 	// sub-test sees the freshly mocked IbnetdiscoverExec result. The 1.1
 	// default of 5m would otherwise let earlier sub-tests' results leak
 	// into later ones (the cache survives across kingpin.Parse calls).
+	// 2.0 default flipped port-state to true; the integration
+	// fixtures don't include port_state series, so disable it
+	// here. port-state is unit-tested in the collectors package.
 	if _, err := kingpin.CommandLine.Parse([]string{
 		fmt.Sprintf("--exporter.output=%s", outputPath),
 		"--exporter.runonce",
 		"--ibnetdiscover.cache-ttl=0",
+		"--no-collector.switch.port-state",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -453,6 +457,7 @@ func TestCollect(t *testing.T) {
 	if _, err = kingpin.CommandLine.Parse([]string{
 		fmt.Sprintf("--web.listen-address=%s", address),
 		"--ibnetdiscover.cache-ttl=0",
+		"--no-collector.switch.port-state",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -479,6 +484,7 @@ func TestCollect(t *testing.T) {
 		"--no-collector.switch",
 		"--collector.ibswinfo",
 		"--ibnetdiscover.cache-ttl=0",
+		"--no-collector.switch.port-state",
 		fmt.Sprintf("--web.listen-address=%s", address),
 	}); err != nil {
 		t.Fatal(err)
@@ -493,6 +499,7 @@ func TestCollect(t *testing.T) {
 	if _, err = kingpin.CommandLine.Parse([]string{
 		"--collector.hca",
 		"--ibnetdiscover.cache-ttl=0",
+		"--no-collector.switch.port-state",
 		fmt.Sprintf("--web.listen-address=%s", address),
 	}); err != nil {
 		t.Fatal(err)
@@ -514,6 +521,7 @@ func TestCollect(t *testing.T) {
 	if _, err = kingpin.CommandLine.Parse([]string{
 		"--web.disable-exporter-metrics",
 		"--ibnetdiscover.cache-ttl=0",
+		"--no-collector.switch.port-state",
 		fmt.Sprintf("--web.listen-address=%s", address),
 	}); err != nil {
 		t.Fatal(err)

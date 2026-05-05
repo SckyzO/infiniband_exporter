@@ -328,6 +328,7 @@ func TestIbswinfoCollectorError(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
+	resetCumulativeCounters()
 	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		var out string
 		var err error
@@ -368,6 +369,7 @@ func TestIbswinfoCollectorErrorRunonce(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
+	resetCumulativeCounters()
 	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		var out string
 		var err error
@@ -406,6 +408,7 @@ func TestIbswinfoCollectorTimeout(t *testing.T) {
 	if _, err := kingpin.CommandLine.Parse([]string{"--ibswinfo.static-cache-ttl=0"}); err != nil {
 		t.Fatal(err)
 	}
+	resetCumulativeCounters()
 	IbswinfoExec = func(lid string, vitals bool, ctx context.Context) (string, error) {
 		return "", context.DeadlineExceeded
 	}
