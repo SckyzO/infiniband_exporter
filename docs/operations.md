@@ -97,11 +97,11 @@ infiniband_exporter --exporter.runonce \
 
 | Symptom | Likely cause |
 | --- | --- |
-| `infiniband_exporter_collect_errors{collector="ibnetdiscover"} > 0` | umad permissions, or `ibnetdiscover` not on `$PATH`. Check exporter logs for stderr from the binary (we surface it from v0.13.0 onward). |
+| `increase(infiniband_exporter_collect_errors_total{collector="ibnetdiscover"}[5m]) > 0` | umad permissions, or `ibnetdiscover` not on `$PATH`. Check exporter logs for stderr from the binary (we surface it from v0.13.0 onward). |
 | `infiniband_switch_up == 0` for a single switch | Management link to that switch is down, or perfquery times out for it. The other switches are unaffected. |
 | Scrape time exceeds `scrape_timeout` | Bump `--perfquery.max-concurrent`; if still too slow, switch to runonce mode. |
 | `ibswinfo` errors on some switches | Some switch firmware versions don't support all MFT registers. `--ibswinfo.exclude-node-name` (planned, see roadmap) lets you skip them. Until then, disable `--collector.ibswinfo` or live with the per-switch error metric. |
-| `infiniband_switch_port_state` always returns no series | The flag is `--collector.switch.port-state` (default off) — enable it to surface up/down state. |
+| `infiniband_switch_port_state` always returns no series | The flag is `--collector.switch.port-state` (default enabled in 2.0; disabled before that) — confirm it is on. |
 
 For fabric-specific bugs, please attach **anonymized** captures via
 [`scripts/anonymize.sh`](../scripts/README.md). The bug-report issue

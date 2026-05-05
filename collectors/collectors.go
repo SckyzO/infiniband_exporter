@@ -35,15 +35,20 @@ var (
 		prometheus.BuildFQName(namespace, "exporter", "collector_duration_seconds"),
 		"Collector time duration.",
 		[]string{"collector"}, nil)
-	collectErrors = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "exporter", "collect_errors"),
-		"Number of errors that occurred during collection",
+	// Cumulative counters — accumulate since process start. Renamed
+	// from `_errors` / `_timeouts` (gauge, per-scrape) in 2.0; the
+	// gauge semantics produced misleading PromQL warnings ("metric
+	// might not be a counter") and made `rate()` queries silently
+	// wrong. With true counters, `rate()` and `increase()` work as
+	// expected.
+	collectErrorsTotal = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "exporter", "collect_errors_total"),
+		"Total number of collection errors observed since the exporter started.",
 		[]string{"collector"}, nil)
-	collecTimeouts = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "exporter", "collect_timeouts"),
-		"Number of timeouts that occurred during collection",
+	collectTimeoutsTotal = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "exporter", "collect_timeouts_total"),
+		"Total number of collection timeouts observed since the exporter started.",
 		[]string{"collector"}, nil)
-	// True counter — accumulates since process start. New in 2.0.
 	collectRetriesTotal = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "exporter", "collect_retries_total"),
 		"Total number of perfquery retries triggered since the exporter started. Each retry follows a transient failure (typically `_do_madrpc: recv failed` from a busy SMA).",

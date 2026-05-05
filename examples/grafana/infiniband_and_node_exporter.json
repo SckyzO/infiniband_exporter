@@ -113,8 +113,8 @@
       "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
       "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_exporter_collect_errors{instance=~\"$instance\"}", "legendFormat": "{{collector}} errors", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_exporter_collect_timeouts{instance=~\"$instance\"}", "legendFormat": "{{collector}} timeouts", "refId": "B"}
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_exporter_collect_errors_total{instance=~\"$instance\"}", "legendFormat": "{{collector}} errors", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"}, "expr": "infiniband_exporter_collect_timeouts_total{instance=~\"$instance\"}", "legendFormat": "{{collector}} timeouts", "refId": "B"}
       ],
       "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineWidth": 1}}, "overrides": []},
       "options": {"legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}}

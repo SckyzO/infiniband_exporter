@@ -217,12 +217,12 @@ func TestIbswinfoCollector(t *testing.T) {
 		}
 	}
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibswinfo"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibswinfo"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibswinfo"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibswinfo"} 0
 		# HELP infiniband_switch_fan_rpm Switch fan rotation speed in RPM (one series per fan).
 		# TYPE infiniband_switch_fan_rpm gauge
 		infiniband_switch_fan_rpm{fan="1",guid="0x506b4b03005c2740",switch="iswr0l1"} 6125
@@ -295,7 +295,7 @@ func TestIbswinfoCollector(t *testing.T) {
 		"infiniband_switch_power_supply_fan_status_info", "infiniband_switch_power_supply_watts",
 		"infiniband_switch_temperature_celsius", "infiniband_switch_fan_status_info", "infiniband_switch_fan_rpm",
 		"infiniband_switch_hardware_info", "infiniband_switch_uptime_seconds",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -341,12 +341,12 @@ func TestIbswinfoCollectorError(t *testing.T) {
 		return out, err
 	}
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibswinfo"} 2
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibswinfo"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibswinfo"} 2
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibswinfo"} 0
 	`
 	w := os.Stderr
 	logger := slog.New(slog.NewTextHandler(w, nil))
@@ -359,7 +359,7 @@ func TestIbswinfoCollectorError(t *testing.T) {
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_power_supply_status_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -381,12 +381,12 @@ func TestIbswinfoCollectorErrorRunonce(t *testing.T) {
 		return out, err
 	}
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibswinfo-runonce"} 2
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibswinfo-runonce"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibswinfo-runonce"} 2
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibswinfo-runonce"} 0
 	`
 	collector := NewIbswinfoCollector(&switchDevices, true, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -397,7 +397,7 @@ func TestIbswinfoCollectorErrorRunonce(t *testing.T) {
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_power_supply_status_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -410,12 +410,12 @@ func TestIbswinfoCollectorTimeout(t *testing.T) {
 		return "", context.DeadlineExceeded
 	}
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibswinfo"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibswinfo"} 2
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibswinfo"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibswinfo"} 2
 	`
 	collector := NewIbswinfoCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -426,7 +426,7 @@ func TestIbswinfoCollectorTimeout(t *testing.T) {
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_power_supply_status_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }

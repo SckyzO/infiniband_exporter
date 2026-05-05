@@ -55,6 +55,10 @@ func SetIbnetdiscoverExec(t *testing.T, setErr bool, timeout bool) {
 	// 1.1; without this reset, every test reachable after a successful
 	// scrape would inherit cached topology and bypass IbnetdiscoverExec.
 	resetIbnetdiscoverCache()
+	// Reset cumulative counters too. They went from gauge (per-scrape)
+	// to counter (since startup) in 2.0, so without a reset the values
+	// from earlier tests leak into the assertions of later ones.
+	resetCumulativeCounters()
 	IbnetdiscoverExec = func(ctx context.Context) (string, error) {
 		if setErr {
 			return "", fmt.Errorf("Error")
@@ -72,6 +76,10 @@ func SetIbnetdiscoverExec(t *testing.T, setErr bool, timeout bool) {
 }
 
 func SetPerfqueryExecs(t *testing.T, setErr bool, timeout bool) {
+	// Reset the per-collector cumulative counters so that errors /
+	// timeouts / retries from prior tests don't leak into the current
+	// one's assertions. New in 2.0 (counters survive across scrapes).
+	resetCumulativeCounters()
 	PerfqueryExec = func(guid string, port string, extraArgs []string, ctx context.Context) (string, error) {
 		if setErr {
 			return "", fmt.Errorf("Error")
@@ -200,4 +208,22 @@ func TestEndToEndPipeline(t *testing.T) {
 			t.Errorf("integration: missing metric family %q", name)
 		}
 	}
+}
+
+// resetCumulativeCounters zeroes every package-level Counter that
+// survives across scrapes. Called from test setup helpers so each
+// test starts from a clean slate (matters since 2.0, when errors,
+// timeouts and retries went from per-scrape gauges to cumulative
+// counters).
+func resetCumulativeCounters() {
+	switchErrorsTotal.Store(0)
+	switchTimeoutsTotal.Store(0)
+	switchRetriesTotal.Store(0)
+	hcaErrorsTotal.Store(0)
+	hcaTimeoutsTotal.Store(0)
+	hcaRetriesTotal.Store(0)
+	ibswinfoErrorsTotal.Store(0)
+	ibswinfoTimeoutsTotal.Store(0)
+	ibnetdiscoverErrorsTotal.Store(0)
+	ibnetdiscoverTimeoutsTotal.Store(0)
 }

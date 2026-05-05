@@ -34,11 +34,14 @@ var (
 	// Persistent port-state series so alerts can use `port_state == 0`
 	// instead of the fragile `absent()` recipes that disappearing
 	// metrics force. Adapted from upstream PR #37 (metfan1981).
-	switchCollectPortState = kingpin.Flag("collector.switch.port-state", "Emit infiniband_switch_port_state (1=up, 0=down). Required by the IBSwitchPortDown alert (default: disabled).").Default("false").Bool()
-	// Cumulative retry counter (--perfquery.retries). Package-level so
-	// it survives across scrapes — Prometheus rebuilds the SwitchCollector
-	// on every HTTP request via setupGathers.
-	switchRetriesTotal atomic.Uint64
+	switchCollectPortState = kingpin.Flag("collector.switch.port-state", "Emit infiniband_switch_port_state (1=up, 0=down). Required by the IBSwitchPortDown alert (default: enabled).").Default("true").Bool()
+	// Cumulative counters — package-level so they survive across
+	// scrapes (Prometheus rebuilds the SwitchCollector on every HTTP
+	// request via setupGathers). Errors and timeouts went from gauge
+	// (per-scrape) to true counter (since startup) in 2.0.
+	switchRetriesTotal  atomic.Uint64
+	switchErrorsTotal   atomic.Uint64
+	switchTimeoutsTotal atomic.Uint64
 )
 
 type SwitchCollector struct {
@@ -115,7 +118,7 @@ func (s *SwitchCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (s *SwitchCollector) Collect(ch chan<- prometheus.Metric) {
 	collectTime := time.Now()
-	counters, metrics, errors, timeouts := s.collect()
+	counters, metrics := s.collect()
 	for _, c := range counters {
 		emitPortCounters(ch, s.portDescs, c, c.device.GUID, c.PortSelect, c.device.Name)
 	}
@@ -155,8 +158,8 @@ func (s *SwitchCollector) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(s.Error, prometheus.GaugeValue, metric.rcvErrError, device.GUID, fmt.Sprintf("%s-rcv-err", s.collector))
 		}
 	}
-	ch <- prometheus.MustNewConstMetric(collectErrors, prometheus.GaugeValue, errors, s.collector)
-	ch <- prometheus.MustNewConstMetric(collecTimeouts, prometheus.GaugeValue, timeouts, s.collector)
+	ch <- prometheus.MustNewConstMetric(collectErrorsTotal, prometheus.CounterValue, float64(switchErrorsTotal.Load()), s.collector)
+	ch <- prometheus.MustNewConstMetric(collectTimeoutsTotal, prometheus.CounterValue, float64(switchTimeoutsTotal.Load()), s.collector)
 	ch <- prometheus.MustNewConstMetric(collectRetriesTotal, prometheus.CounterValue, float64(switchRetriesTotal.Load()), s.collector)
 	ch <- prometheus.MustNewConstMetric(collectDuration, prometheus.GaugeValue, time.Since(collectTime).Seconds(), s.collector)
 	if strings.HasSuffix(s.collector, "-runonce") {
@@ -164,14 +167,10 @@ func (s *SwitchCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetrics, float64, float64) {
+func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetrics) {
 	var counters []PerfQueryCounters
 	metrics := make(map[string]SwitchMetrics)
 	var countersLock sync.Mutex
-	// errors/timeouts are mutated from N concurrent goroutines (capped by
-	// --perfquery.max-concurrent); use atomics to avoid the data race that
-	// `go test -race` would otherwise flag.
-	var errors, timeouts uint64
 	limit := make(chan int, *maxConcurrent)
 	wg := &sync.WaitGroup{}
 	for _, device := range *s.devices {
@@ -191,18 +190,18 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 			if err == context.DeadlineExceeded {
 				metric.timeout = 1
 				s.logger.Error("Timeout collecting extended perfquery counters", "guid", device.GUID)
-				atomic.AddUint64(&timeouts, 1)
+				switchTimeoutsTotal.Add(1)
 			} else if err != nil {
 				metric.error = 1
 				s.logger.Error("Error collecting extended perfquery counters",
 					"guid", device.GUID, "retries", retries, "err", err)
-				atomic.AddUint64(&errors, 1)
+				switchErrorsTotal.Add(1)
 			}
 			if err != nil {
 				return
 			}
 			deviceCounters, errs := perfqueryParse(device, extendedOut, s.logger)
-			atomic.AddUint64(&errors, uint64(errs))
+			switchErrorsTotal.Add(uint64(errs))
 			if *switchCollectBase {
 				s.logger.Debug("Adding parsed counters", "count", len(deviceCounters), "guid", device.GUID, "name", device.Name)
 				countersLock.Lock()
@@ -223,17 +222,17 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 						if err == context.DeadlineExceeded {
 							metric.rcvErrTimeout = 1
 							s.logger.Error("Timeout collecting rcvErr perfquery counters", "guid", device.GUID)
-							atomic.AddUint64(&timeouts, 1)
+							switchTimeoutsTotal.Add(1)
 							return
 						} else if err != nil {
 							metric.rcvErrError = 1
 							s.logger.Error("Error collecting rcvErr perfquery counters",
 								"guid", device.GUID, "retries", retries, "err", err)
-							atomic.AddUint64(&errors, 1)
+							switchErrorsTotal.Add(1)
 							return
 						}
 						rcvErrCounters, errs := perfqueryParse(device, rcvErrOut, s.logger)
-						atomic.AddUint64(&errors, uint64(errs))
+						switchErrorsTotal.Add(uint64(errs))
 						countersLock.Lock()
 						counters = append(counters, rcvErrCounters...)
 						countersLock.Unlock()
@@ -247,5 +246,5 @@ func (s *SwitchCollector) collect() ([]PerfQueryCounters, map[string]SwitchMetri
 	}
 	wg.Wait()
 	close(limit)
-	return counters, metrics, float64(errors), float64(timeouts)
+	return counters, metrics
 }

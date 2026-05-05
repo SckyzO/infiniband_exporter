@@ -40,12 +40,12 @@ SW  1719 10 0x7cfe9003009ce5b0 4x EDR - CA   134  1 0x7cfe9003003b4bde ( )`
 func TestIbnetdiscoverCollector(t *testing.T) {
 	SetIbnetdiscoverExec(t, false, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibnetdiscover"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibnetdiscover"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibnetdiscover"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibnetdiscover"} 0
 	`
 	collector := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
@@ -56,7 +56,7 @@ func TestIbnetdiscoverCollector(t *testing.T) {
 		t.Errorf("Unexpected collection count %d, expected 3", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -64,12 +64,12 @@ func TestIbnetdiscoverCollector(t *testing.T) {
 func TestIbnetdiscoverCollectorError(t *testing.T) {
 	SetIbnetdiscoverExec(t, true, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibnetdiscover"} 1
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibnetdiscover"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibnetdiscover"} 1
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibnetdiscover"} 0
 	`
 	collector := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
@@ -80,7 +80,7 @@ func TestIbnetdiscoverCollectorError(t *testing.T) {
 		t.Errorf("Unexpected collection count %d, expected 3", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -88,12 +88,12 @@ func TestIbnetdiscoverCollectorError(t *testing.T) {
 func TestIbnetdiscoverCollectorErrorRunonce(t *testing.T) {
 	SetIbnetdiscoverExec(t, true, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibnetdiscover-runonce"} 1
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibnetdiscover-runonce"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibnetdiscover-runonce"} 1
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibnetdiscover-runonce"} 0
 	`
 	collector := NewIBNetDiscover(true, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
@@ -104,7 +104,7 @@ func TestIbnetdiscoverCollectorErrorRunonce(t *testing.T) {
 		t.Errorf("Unexpected collection count %d, expected 4", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -112,12 +112,12 @@ func TestIbnetdiscoverCollectorErrorRunonce(t *testing.T) {
 func TestIbnetdiscoverCollectorTimeout(t *testing.T) {
 	SetIbnetdiscoverExec(t, false, true)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="ibnetdiscover"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="ibnetdiscover"} 1
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="ibnetdiscover"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="ibnetdiscover"} 1
 	`
 	collector := NewIBNetDiscover(false, slog.New(slog.DiscardHandler))
 	_, _, _ = collector.GetPorts()
@@ -128,7 +128,7 @@ func TestIbnetdiscoverCollectorTimeout(t *testing.T) {
 		t.Errorf("Unexpected collection count %d, expected 3", val)
 	}
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }

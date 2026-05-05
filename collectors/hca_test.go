@@ -44,12 +44,12 @@ func TestHCACollector(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, false, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="hca"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="hca"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="hca"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="hca"} 0
 		# HELP infiniband_hca_info Constant 1 carrying HCA identification labels (lid, guid, hca name).
 		# TYPE infiniband_hca_info gauge
 		infiniband_hca_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",lid="133"} 1
@@ -176,7 +176,7 @@ func TestHCACollector(t *testing.T) {
 		"infiniband_hca_port_unicast_transmit_packets_total", "infiniband_hca_port_vl15_dropped_total",
 		"infiniband_hca_port_buffer_overrun_errors_total",
 		"infiniband_hca_info", "infiniband_hca_port_rate_bytes_per_second", "infiniband_hca_port_raw_rate_bytes_per_second", "infiniband_hca_uplink_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -187,12 +187,12 @@ func TestHCACollectorFull(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, false, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="hca"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="hca"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="hca"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="hca"} 0
 		# HELP infiniband_hca_info Constant 1 carrying HCA identification labels (lid, guid, hca name).
 		# TYPE infiniband_hca_info gauge
 		infiniband_hca_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",lid="133"} 1
@@ -345,7 +345,7 @@ func TestHCACollectorFull(t *testing.T) {
 		"infiniband_hca_port_local_physical_errors_total", "infiniband_hca_port_looping_errors_total",
 		"infiniband_hca_port_malformed_packet_errors_total", "infiniband_hca_port_vl_mapping_errors_total",
 		"infiniband_hca_info", "infiniband_hca_port_rate_bytes_per_second", "infiniband_hca_port_raw_rate_bytes_per_second", "infiniband_hca_uplink_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -356,12 +356,12 @@ func TestHCACollectorError(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, true, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="hca"} 2
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="hca"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="hca"} 2
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="hca"} 0
 	`
 	collector := NewHCACollector(&hcaDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -373,7 +373,7 @@ func TestHCACollectorError(t *testing.T) {
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
 		"infiniband_hca_port_link_error_recovery_total", "infiniband_hca_port_local_link_integrity_errors_total",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -384,12 +384,12 @@ func TestHCACollectorErrorRunonce(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, true, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="hca-runonce"} 2
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="hca-runonce"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="hca-runonce"} 2
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="hca-runonce"} 0
 	`
 	collector := NewHCACollector(&hcaDevices, true, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -401,7 +401,7 @@ func TestHCACollectorErrorRunonce(t *testing.T) {
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
 		"infiniband_hca_port_link_error_recovery_total", "infiniband_hca_port_local_link_integrity_errors_total",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -412,12 +412,12 @@ func TestHCACollectorTimeout(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, false, true)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="hca"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="hca"} 2
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="hca"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="hca"} 2
 	`
 	collector := NewHCACollector(&hcaDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -429,7 +429,7 @@ func TestHCACollectorTimeout(t *testing.T) {
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_hca_port_excessive_buffer_overrun_errors_total", "infiniband_hca_port_link_downed_total",
 		"infiniband_hca_port_link_error_recovery_total", "infiniband_hca_port_local_link_integrity_errors_total",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }

@@ -29,12 +29,12 @@ func TestSwitchCollector(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, false, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="switch"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="switch"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="switch"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="switch"} 0
 		# HELP infiniband_switch_info Constant 1 carrying switch identification labels (lid, guid, switch name)
 		# TYPE infiniband_switch_info gauge
 		infiniband_switch_info{guid="0x506b4b03005c2740",lid="2052",switch="iswr0l1"} 1
@@ -189,7 +189,7 @@ func TestSwitchCollector(t *testing.T) {
 		"infiniband_switch_port_unicast_transmit_packets_total", "infiniband_switch_port_vl15_dropped_total",
 		"infiniband_switch_port_buffer_overrun_errors_total",
 		"infiniband_switch_info", "infiniband_switch_port_rate_bytes_per_second", "infiniband_switch_port_raw_rate_bytes_per_second", "infiniband_switch_uplink_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -200,12 +200,12 @@ func TestSwitchCollectorFull(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, false, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="switch"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="switch"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="switch"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="switch"} 0
 		# HELP infiniband_switch_info Constant 1 carrying switch identification labels (lid, guid, switch name)
 		# TYPE infiniband_switch_info gauge
 		infiniband_switch_info{guid="0x506b4b03005c2740",lid="2052",switch="iswr0l1"} 1
@@ -392,7 +392,7 @@ func TestSwitchCollectorFull(t *testing.T) {
 		"infiniband_switch_port_local_physical_errors_total", "infiniband_switch_port_looping_errors_total",
 		"infiniband_switch_port_malformed_packet_errors_total", "infiniband_switch_port_vl_mapping_errors_total",
 		"infiniband_switch_info", "infiniband_switch_port_rate_bytes_per_second", "infiniband_switch_port_raw_rate_bytes_per_second", "infiniband_switch_uplink_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -403,12 +403,12 @@ func TestSwitchCollectorNoBase(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, false, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="switch"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="switch"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="switch"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="switch"} 0
 		# HELP infiniband_switch_port_buffer_overrun_errors_total Inbound packets dropped because the receive buffer overran (PortBufferOverrunErrors).
 		# TYPE infiniband_switch_port_buffer_overrun_errors_total counter
 		infiniband_switch_port_buffer_overrun_errors_total{guid="0x506b4b03005c2740",port="1",switch="iswr0l1"} 0
@@ -463,7 +463,7 @@ func TestSwitchCollectorNoBase(t *testing.T) {
 		"infiniband_switch_port_local_physical_errors_total", "infiniband_switch_port_looping_errors_total",
 		"infiniband_switch_port_malformed_packet_errors_total", "infiniband_switch_port_vl_mapping_errors_total",
 		"infiniband_switch_info", "infiniband_switch_port_rate_bytes_per_second", "infiniband_switch_raw_port_rate_bytes_per_second", "infiniband_switch_uplink_info",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -474,12 +474,12 @@ func TestSwitchCollectorError(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, true, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="switch"} 2
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="switch"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="switch"} 2
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="switch"} 0
 	`
 	collector := NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -491,7 +491,7 @@ func TestSwitchCollectorError(t *testing.T) {
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
 		"infiniband_switch_port_link_error_recovery_total", "infiniband_switch_port_local_link_integrity_errors_total",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -502,12 +502,12 @@ func TestSwitchCollectorErrorRunonce(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, true, false)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="switch-runonce"} 2
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="switch-runonce"} 0
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="switch-runonce"} 2
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="switch-runonce"} 0
 	`
 	collector := NewSwitchCollector(&switchDevices, true, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -519,7 +519,7 @@ func TestSwitchCollectorErrorRunonce(t *testing.T) {
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
 		"infiniband_switch_port_link_error_recovery_total", "infiniband_switch_port_local_link_integrity_errors_total",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }
@@ -530,12 +530,12 @@ func TestSwitchCollectorTimeout(t *testing.T) {
 	}
 	SetPerfqueryExecs(t, false, true)
 	expected := `
-		# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-		# TYPE infiniband_exporter_collect_errors gauge
-		infiniband_exporter_collect_errors{collector="switch"} 0
-		# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-		# TYPE infiniband_exporter_collect_timeouts gauge
-		infiniband_exporter_collect_timeouts{collector="switch"} 2
+		# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+		# TYPE infiniband_exporter_collect_errors_total counter
+		infiniband_exporter_collect_errors_total{collector="switch"} 0
+		# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+		# TYPE infiniband_exporter_collect_timeouts_total counter
+		infiniband_exporter_collect_timeouts_total{collector="switch"} 2
 	`
 	collector := NewSwitchCollector(&switchDevices, false, slog.New(slog.DiscardHandler))
 	gatherers := setupGatherer(collector)
@@ -547,7 +547,7 @@ func TestSwitchCollectorTimeout(t *testing.T) {
 	if err := testutil.GatherAndCompare(gatherers, strings.NewReader(expected),
 		"infiniband_switch_port_excessive_buffer_overrun_errors_total", "infiniband_switch_port_link_downed_total",
 		"infiniband_switch_port_link_error_recovery_total", "infiniband_switch_port_local_link_integrity_errors_total",
-		"infiniband_exporter_collect_errors", "infiniband_exporter_collect_timeouts"); err != nil {
+		"infiniband_exporter_collect_errors_total", "infiniband_exporter_collect_timeouts_total"); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }

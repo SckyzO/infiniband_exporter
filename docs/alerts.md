@@ -72,7 +72,7 @@ seen anywhere in the fabric for 30 minutes, which is what happens if
 operators deploy these rules but forget the flag — without this
 catch, `IBSwitchPortDown` is silently inoperative.
 
-| `IBHCAScrapeErrorRateElevated` | info | `avg_over_time((infiniband_exporter_collect_errors{collector="hca"} > 0)[1h:]) > 0.01` for 30 m |
+| `IBHCAScrapeErrorRateElevated` | info | `increase(infiniband_exporter_collect_errors_total{collector="hca"}[1h]) > 5` for 30 m |
 
 `IBHCAScrapeErrorRateElevated` (added with the v2.0 alert pack) is
 an info-level signal that more than 1 % of HCA scrapes over the

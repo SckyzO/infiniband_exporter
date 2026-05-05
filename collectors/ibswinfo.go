@@ -90,6 +90,14 @@ type psuStatus struct {
 // state is reset each time. ibnetdiscoverCache uses the same pattern.
 var ibswinfoStaticCache sync.Map // map[guid]ibswinfoCacheEntry
 
+// Cumulative counters — same pattern as switch.go and hca.go.
+// Errors and timeouts went from gauge (per-scrape) to counter
+// (cumulative since startup) in 2.0.
+var (
+	ibswinfoErrorsTotal   atomic.Uint64
+	ibswinfoTimeoutsTotal atomic.Uint64
+)
+
 type IbswinfoCollector struct {
 	devices              *[]InfinibandDevice
 	logger               *slog.Logger
@@ -196,7 +204,7 @@ func (s *IbswinfoCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (s *IbswinfoCollector) Collect(ch chan<- prometheus.Metric) {
 	collectTime := time.Now()
-	swinfos, errors, timeouts := s.collect()
+	swinfos := s.collect()
 	for _, swinfo := range swinfos {
 		ch <- prometheus.MustNewConstMetric(s.HardwareInfo, prometheus.GaugeValue, 1, swinfo.device.GUID,
 			swinfo.FirmwareVersion, swinfo.PSID, swinfo.PartNumber, swinfo.SerialNumber, swinfo.device.Name)
@@ -232,8 +240,8 @@ func (s *IbswinfoCollector) Collect(ch chan<- prometheus.Metric) {
 			}
 		}
 	}
-	ch <- prometheus.MustNewConstMetric(collectErrors, prometheus.GaugeValue, errors, s.collector)
-	ch <- prometheus.MustNewConstMetric(collecTimeouts, prometheus.GaugeValue, timeouts, s.collector)
+	ch <- prometheus.MustNewConstMetric(collectErrorsTotal, prometheus.CounterValue, float64(ibswinfoErrorsTotal.Load()), s.collector)
+	ch <- prometheus.MustNewConstMetric(collectTimeoutsTotal, prometheus.CounterValue, float64(ibswinfoTimeoutsTotal.Load()), s.collector)
 	ch <- prometheus.MustNewConstMetric(collectDuration, prometheus.GaugeValue, time.Since(collectTime).Seconds(), s.collector)
 	if strings.HasSuffix(s.collector, "-runonce") {
 		ch <- prometheus.MustNewConstMetric(lastExecution, prometheus.GaugeValue, float64(time.Now().Unix()), s.collector)
@@ -259,10 +267,9 @@ func (s *IbswinfoCollector) useVitalsForGUID(guid string) (ibswinfoCacheEntry, b
 	return entry, true
 }
 
-func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
+func (s *IbswinfoCollector) collect() []Ibswinfo {
 	var ibswinfos []Ibswinfo
 	var ibswinfosLock sync.Mutex
-	var errors, timeouts uint64
 	limit := make(chan int, *ibswinfoMaxConcurrent)
 	wg := &sync.WaitGroup{}
 	s.logger.Debug("Collecting ibswinfo on devices", "count", len(*s.devices))
@@ -284,11 +291,11 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 			if ibswinfoErr == context.DeadlineExceeded {
 				ibswinfoData.timeout = 1
 				s.logger.Error("Timeout collecting ibswinfo data", "guid", device.GUID, "lid", device.LID)
-				atomic.AddUint64(&timeouts, 1)
+				ibswinfoTimeoutsTotal.Add(1)
 			} else if ibswinfoErr != nil {
 				ibswinfoData.error = 1
 				s.logger.Error("Error collecting ibswinfo data", "err", fmt.Sprintf("%s:%s", ibswinfoErr, ibswinfoOut), "guid", device.GUID, "lid", device.LID)
-				atomic.AddUint64(&errors, 1)
+				ibswinfoErrorsTotal.Add(1)
 			}
 			if ibswinfoErr == nil {
 				var parseErr error
@@ -342,7 +349,7 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 				}
 				if parseErr != nil {
 					s.logger.Error("Error parsing ibswinfo output", "guid", device.GUID, "lid", device.LID, "vitals", useVitals)
-					atomic.AddUint64(&errors, 1)
+					ibswinfoErrorsTotal.Add(1)
 				} else {
 					ibswinfoData.device = device
 					ibswinfosLock.Lock()
@@ -373,7 +380,7 @@ func (s *IbswinfoCollector) collect() ([]Ibswinfo, float64, float64) {
 			return true
 		})
 	}
-	return ibswinfos, float64(errors), float64(timeouts)
+	return ibswinfos
 }
 
 func ibswinfoArgs(lid string, vitals bool) (string, []string) {

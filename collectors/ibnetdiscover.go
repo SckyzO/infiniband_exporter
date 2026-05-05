@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"log/slog"
@@ -106,6 +107,14 @@ type ibnetdiscoverCacheT struct {
 
 var ibnetdiscoverCache ibnetdiscoverCacheT
 
+// Cumulative counters — same pattern as switch.go and hca.go.
+// Errors and timeouts went from gauge (per-scrape) to counter
+// (cumulative since startup) in 2.0.
+var (
+	ibnetdiscoverErrorsTotal   atomic.Uint64
+	ibnetdiscoverTimeoutsTotal atomic.Uint64
+)
+
 func NewIBNetDiscover(runonce bool, logger *slog.Logger) *IBNetDiscover {
 	collector := "ibnetdiscover"
 	if runonce {
@@ -134,9 +143,11 @@ func (ib *IBNetDiscover) GetPorts() (*[]InfinibandDevice, *[]InfinibandDevice, e
 	if err == context.DeadlineExceeded {
 		ib.logger.Error("Timeout executing ibnetdiscover")
 		ib.timeoutMetric = 1
+		ibnetdiscoverTimeoutsTotal.Add(1)
 	} else if err != nil {
 		ib.logger.Error("Error executing ibnetdiscover", "err", err)
 		ib.errorMetric = 1
+		ibnetdiscoverErrorsTotal.Add(1)
 	}
 	if err == nil && *ibnetdiscoverCacheTTL > 0 {
 		ibnetdiscoverCache.mu.Lock()
@@ -152,8 +163,8 @@ func (ib *IBNetDiscover) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (ib *IBNetDiscover) Collect(ch chan<- prometheus.Metric) {
-	ch <- prometheus.MustNewConstMetric(collectErrors, prometheus.GaugeValue, ib.errorMetric, ib.collector)
-	ch <- prometheus.MustNewConstMetric(collecTimeouts, prometheus.GaugeValue, ib.timeoutMetric, ib.collector)
+	ch <- prometheus.MustNewConstMetric(collectErrorsTotal, prometheus.CounterValue, float64(ibnetdiscoverErrorsTotal.Load()), ib.collector)
+	ch <- prometheus.MustNewConstMetric(collectTimeoutsTotal, prometheus.CounterValue, float64(ibnetdiscoverTimeoutsTotal.Load()), ib.collector)
 	ch <- prometheus.MustNewConstMetric(collectDuration, prometheus.GaugeValue, ib.duration, ib.collector)
 	if strings.HasSuffix(ib.collector, "-runonce") {
 		ch <- prometheus.MustNewConstMetric(lastExecution, prometheus.GaugeValue, float64(time.Now().Unix()), ib.collector)

@@ -341,37 +341,37 @@ infiniband_hca_up{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1"} 1
 infiniband_hca_uplink_info{guid="0x506b4b0300cc02a6",hca="p0001 HCA-1",port="1",switch="ib-i4l1s01",uplink="ib-i4l1s01",uplink_guid="0x506b4b03005c2740",uplink_lid="2052",uplink_port="35",uplink_type="SW"} 1
 infiniband_hca_uplink_info{guid="0x7cfe9003003b4b96",hca="o0002 HCA-1",port="1",switch="ib-i1l1s01",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="11",uplink_type="SW"} 1
 infiniband_hca_uplink_info{guid="0x7cfe9003003b4bde",hca="o0001 HCA-1",port="1",switch="ib-i1l1s01",uplink="ib-i1l1s01",uplink_guid="0x7cfe9003009ce5b0",uplink_lid="1719",uplink_port="10",uplink_type="SW"} 1`
-	expectedSwitchNoError = `# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-# TYPE infiniband_exporter_collect_errors gauge
-infiniband_exporter_collect_errors{collector="ibnetdiscover-runonce"} 0
-infiniband_exporter_collect_errors{collector="switch-runonce"} 0
+	expectedSwitchNoError = `# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+# TYPE infiniband_exporter_collect_errors_total counter
+infiniband_exporter_collect_errors_total{collector="ibnetdiscover-runonce"} 0
+infiniband_exporter_collect_errors_total{collector="switch-runonce"} 0
 # HELP infiniband_exporter_collect_retries_total Total number of perfquery retries triggered since the exporter started. Each retry follows a transient failure (typically ` + "`" + `_do_madrpc: recv failed` + "`" + ` from a busy SMA).
 # TYPE infiniband_exporter_collect_retries_total counter
 infiniband_exporter_collect_retries_total{collector="switch-runonce"} 0
-# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-# TYPE infiniband_exporter_collect_timeouts gauge
-infiniband_exporter_collect_timeouts{collector="ibnetdiscover-runonce"} 0
-infiniband_exporter_collect_timeouts{collector="switch-runonce"} 0`
-	expectedFullNoError = `# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-# TYPE infiniband_exporter_collect_errors gauge
-infiniband_exporter_collect_errors{collector="hca-runonce"} 0
-infiniband_exporter_collect_errors{collector="ibnetdiscover-runonce"} 0
-infiniband_exporter_collect_errors{collector="switch-runonce"} 0
+# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+# TYPE infiniband_exporter_collect_timeouts_total counter
+infiniband_exporter_collect_timeouts_total{collector="ibnetdiscover-runonce"} 0
+infiniband_exporter_collect_timeouts_total{collector="switch-runonce"} 0`
+	expectedFullNoError = `# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+# TYPE infiniband_exporter_collect_errors_total counter
+infiniband_exporter_collect_errors_total{collector="hca-runonce"} 0
+infiniband_exporter_collect_errors_total{collector="ibnetdiscover-runonce"} 0
+infiniband_exporter_collect_errors_total{collector="switch-runonce"} 0
 # HELP infiniband_exporter_collect_retries_total Total number of perfquery retries triggered since the exporter started. Each retry follows a transient failure (typically ` + "`" + `_do_madrpc: recv failed` + "`" + ` from a busy SMA).
 # TYPE infiniband_exporter_collect_retries_total counter
 infiniband_exporter_collect_retries_total{collector="hca-runonce"} 0
 infiniband_exporter_collect_retries_total{collector="switch-runonce"} 0
-# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-# TYPE infiniband_exporter_collect_timeouts gauge
-infiniband_exporter_collect_timeouts{collector="hca-runonce"} 0
-infiniband_exporter_collect_timeouts{collector="ibnetdiscover-runonce"} 0
-infiniband_exporter_collect_timeouts{collector="switch-runonce"} 0`
-	expectedIbnetdiscoverError = `# HELP infiniband_exporter_collect_errors Number of errors that occurred during collection
-# TYPE infiniband_exporter_collect_errors gauge
-infiniband_exporter_collect_errors{collector="ibnetdiscover-runonce"} 1
-# HELP infiniband_exporter_collect_timeouts Number of timeouts that occurred during collection
-# TYPE infiniband_exporter_collect_timeouts gauge
-infiniband_exporter_collect_timeouts{collector="ibnetdiscover-runonce"} 0`
+# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+# TYPE infiniband_exporter_collect_timeouts_total counter
+infiniband_exporter_collect_timeouts_total{collector="hca-runonce"} 0
+infiniband_exporter_collect_timeouts_total{collector="ibnetdiscover-runonce"} 0
+infiniband_exporter_collect_timeouts_total{collector="switch-runonce"} 0`
+	expectedIbnetdiscoverError = `# HELP infiniband_exporter_collect_errors_total Total number of collection errors observed since the exporter started.
+# TYPE infiniband_exporter_collect_errors_total counter
+infiniband_exporter_collect_errors_total{collector="ibnetdiscover-runonce"} 1
+# HELP infiniband_exporter_collect_timeouts_total Total number of collection timeouts observed since the exporter started.
+# TYPE infiniband_exporter_collect_timeouts_total counter
+infiniband_exporter_collect_timeouts_total{collector="ibnetdiscover-runonce"} 0`
 )
 
 func TestMain(m *testing.M) {
