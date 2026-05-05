@@ -96,6 +96,29 @@ groups:
             or it is running without `--collector.switch.port-state`.
             Without this series the IBSwitchPortDown alert is silently
             inoperative.
+
+      - alert: IBHCAScrapeErrorRateElevated
+        # Tracks the fraction of scrapes per hour where the HCA
+        # collector reported at least one error. A healthy fabric
+        # sits at 0; a noisy one (transient MAD timeouts) at <1 %.
+        # >1 % over 30 m means the fabric needs investigation —
+        # SMA load, cabling, congestion. Info-level: don't page,
+        # but expose the drift on dashboards.
+        expr: |
+          avg_over_time((infiniband_exporter_collect_errors{collector="hca"} > 0)[1h:])
+          > 0.01
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "HCA scrape error rate trending up — investigate fabric MAD timeouts"
+          description: |
+            More than 1 % of HCA scrapes over the last hour reported
+            errors (most likely transient `_do_madrpc: recv failed`
+            from perfquery). Sustained >30 m. Check SMA load, link
+            recovery counters, and node_exporter on the exporter
+            host. If you have not yet, set `--perfquery.retries=1`
+            on the exporter to absorb the transients.
         labels:
           severity: critical
         annotations:
