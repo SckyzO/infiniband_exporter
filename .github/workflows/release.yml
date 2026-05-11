@@ -34,7 +34,7 @@ jobs:
       # GHCR login uses the workflow's own GITHUB_TOKEN; nothing extra
       # required as long as `permissions.packages: write` is set above.
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
