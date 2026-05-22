@@ -1,0 +1,186 @@
+# Weekly rebuild of the last 2 stable image lines against up-to-date base
+# images, so security patches in the debian base AND in the apt-installed
+# infiniband-diags / freshly-fetched ibswinfo.sh flow into published
+# artefacts without waiting for the next release tag.
+#
+# What it does
+#   - Picks the last 2 semver-stable git tags (vX.Y.Z, no prerelease suffix).
+#   - For each tag: checks out the repo at that tag, compiles the Go binary
+#     PER ARCH, builds a single-arch image per arch, assembles them into a
+#     multi-arch manifest, pushes to GHCR + Docker Hub, signs with cosign.
+#   - Tags pushed per release-tag:
+#       :X.Y.Z              (moving alias — re-pushed with a fresh digest)
+#       :X.Y.Z-YYYYMMDD     (immutable dated tag for GitOps determinism)
+#
+# Why per-arch (and not a single multi-arch buildx over one binary): the
+# binary is built on the runner. Building it once (natively amd64) and then
+# running `buildx --platform linux/amd64,linux/arm64` would copy the SAME
+# amd64 binary into the arm64 image (exec format error on arm64). So we
+# cross-compile each arch and build that arch's image separately, then join.
+#
+# Triggers
+#   - Cron: Mondays 04:00 UTC (one hour before the Dependabot run, so the
+#     refresh doesn't race base-image bump PRs).
+#   - workflow_dispatch: optional `tags` input to override the default
+#     "last 2 stable" auto-selection.
+
+name: Weekly Docker refresh
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Comma-separated tags to rebuild (default: last 2 stable semver tags)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  GHCR_REPO: ghcr.io/sckyzo/infiniband_exporter
+  HUB_REPO: docker.io/sckyzo/infiniband-exporter
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compute target tags
+        id: tags
+        env:
+          MANUAL_TAGS: ${{ inputs.tags }}
+        run: |
+          set -eu
+          if [ -n "${MANUAL_TAGS:-}" ]; then
+            tags="$MANUAL_TAGS"
+          else
+            tags=$(git tag --sort=-version:refname \
+                   | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+                   | head -2 | paste -sd, -)
+          fi
+          if [ -z "$tags" ]; then
+            echo "::error::No semver tags found"
+            exit 1
+          fi
+          echo "Tags to rebuild: $tags"
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "date_suffix=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.2'
+          cache: false
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v4
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Log in to GHCR
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_PASS: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_PASS" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+      - name: Log in to Docker Hub
+        env:
+          HUB_USER: ${{ secrets.DOCKER_USERNAME }}
+          HUB_PASS: ${{ secrets.DOCKER_TOKEN }}
+        run: echo "$HUB_PASS" | docker login docker.io -u "$HUB_USER" --password-stdin
+
+      - name: Refresh each tag
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
+          DATE_SUFFIX: ${{ steps.tags.outputs.date_suffix }}
+        run: |
+          set -eu
+          IFS=',' read -ra TAG_LIST <<< "$TAGS"
+          for tag in "${TAG_LIST[@]}"; do
+            echo "::group::Refreshing $tag"
+            git checkout "$tag"
+
+            # The single-stage Dockerfile expects ./infiniband_exporter in the
+            # build context. Older tags that ship no Dockerfile, or a
+            # multi-stage one this build context can't satisfy, are skipped.
+            # The -f test short-circuits the grep so a missing file doesn't
+            # leak through as a false negative.
+            if [ ! -f Dockerfile ] || grep -q 'AS builder' Dockerfile; then
+              echo "::warning::$tag has no usable single-stage Dockerfile, skipping"
+              echo "::endgroup::"
+              continue
+            fi
+
+            version="${tag#v}"
+            commit=$(git rev-parse HEAD)
+            build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            dated="${version}-${DATE_SUFFIX}"
+
+            ldflags="-s -w \
+              -X github.com/prometheus/common/version.Version=${version} \
+              -X github.com/prometheus/common/version.Revision=${commit} \
+              -X github.com/prometheus/common/version.Branch=refresh \
+              -X github.com/prometheus/common/version.BuildUser=refresh-cron \
+              -X github.com/prometheus/common/version.BuildDate=${build_date}"
+
+            # Build each arch's binary + single-arch image. The per-arch
+            # ":X.Y.Z-<arch>" tags are the assembly inputs for the manifest
+            # below (consistent with this repo's historical -arch tagging).
+            for arch in amd64 arm64; do
+              CGO_ENABLED=0 GOOS=linux GOARCH="$arch" \
+                go build -ldflags "$ldflags" -o ./infiniband_exporter .
+
+              docker buildx build \
+                --platform "linux/${arch}" \
+                --file Dockerfile \
+                --build-arg VERSION="$version" \
+                --build-arg COMMIT="$commit" \
+                --build-arg BUILD_DATE="$build_date" \
+                --label "org.opencontainers.image.created=$build_date" \
+                --label "org.opencontainers.image.revision=$commit" \
+                --label "org.opencontainers.image.version=$version" \
+                --tag "${GHCR_REPO}:${version}-${arch}" \
+                --tag "${HUB_REPO}:${version}-${arch}" \
+                --provenance=false \
+                --push .
+            done
+
+            # Assemble the multi-arch manifest for the moving and dated tags
+            # on both registries from the per-arch images, then cosign-sign
+            # each final manifest.
+            for repo in "$GHCR_REPO" "$HUB_REPO"; do
+              for mtag in "$version" "$dated"; do
+                docker buildx imagetools create \
+                  --tag "${repo}:${mtag}" \
+                  "${repo}:${version}-amd64" \
+                  "${repo}:${version}-arm64"
+                cosign sign --yes "${repo}:${mtag}"
+              done
+            done
+
+            rm -f ./infiniband_exporter
+            echo "::endgroup::"
+          done
+
+      - name: Summary
+        if: always()
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
+          DATE_SUFFIX: ${{ steps.tags.outputs.date_suffix }}
+        run: |
+          {
+            echo "## Weekly Docker refresh"
+            echo
+            echo "**Tags refreshed:** $TAGS"
+            echo "**Dated suffix:** $DATE_SUFFIX"
+            echo
+            echo "Each tag produces 2 multi-arch manifests (moving alias +"
+            echo "dated immutable) on each of GHCR and Docker Hub, every"
+            echo "manifest cosign-signed."
+          } >> "$GITHUB_STEP_SUMMARY"

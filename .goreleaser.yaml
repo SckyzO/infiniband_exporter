@@ -46,51 +46,80 @@ checksum:
 snapshot:
   version_template: '{{ .Version }}-snapshot-{{ .ShortCommit }}'
 
-# Container images. Pushed to GitHub Container Registry on every tag.
-# infiniband-diags is only packaged for amd64 and arm64 on Debian, so
-# the Docker images cover those two architectures (the tarball still
-# covers all four including ppc64le and s390x).
-dockers:
-  - image_templates:
-      - "ghcr.io/sckyzo/infiniband_exporter:{{ .Version }}-amd64"
-      - "ghcr.io/sckyzo/infiniband_exporter:latest-amd64"
-    dockerfile: Dockerfile
-    use: buildx
-    goos: linux
-    goarch: amd64
-    extra_files:
-      - LICENSE
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-  - image_templates:
-      - "ghcr.io/sckyzo/infiniband_exporter:{{ .Version }}-arm64"
-      - "ghcr.io/sckyzo/infiniband_exporter:latest-arm64"
-    dockerfile: Dockerfile
-    use: buildx
-    goos: linux
-    goarch: arm64
-    extra_files:
-      - LICENSE
-    build_flag_templates:
-      - "--platform=linux/arm64"
-      - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
+# Supply-chain artefacts, produced and verifiable on every release:
+#   1. SBOM (CycloneDX) per archive — what's inside each tarball.
+#   2. Cosign signature on the checksum file — proves the release artefacts
+#      weren't tampered with after build.
+#   3. Cosign signatures on every Docker manifest — see docker_signs below.
+# All signatures are keyless via Sigstore: the signing identity is the GitHub
+# Actions workflow itself, attested by the runner's OIDC token. Consumers
+# verify with `cosign verify <image>` (see docker/README.md).
+sboms:
+  - artifacts: archive
 
-docker_manifests:
-  - name_template: "ghcr.io/sckyzo/infiniband_exporter:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/sckyzo/infiniband_exporter:{{ .Version }}-amd64"
-      - "ghcr.io/sckyzo/infiniband_exporter:{{ .Version }}-arm64"
-  - name_template: "ghcr.io/sckyzo/infiniband_exporter:latest"
-    image_templates:
-      - "ghcr.io/sckyzo/infiniband_exporter:latest-amd64"
-      - "ghcr.io/sckyzo/infiniband_exporter:latest-arm64"
+signs:
+  - cmd: cosign
+    env:
+      - COSIGN_EXPERIMENTAL=1
+    certificate: '${artifact}.pem'
+    args:
+      - sign-blob
+      - '--yes'
+      - '--output-certificate=${certificate}'
+      - '--output-signature=${signature}'
+      - '${artifact}'
+    artifacts: checksum
+    output: true
+
+docker_signs:
+  - cmd: cosign
+    env:
+      - COSIGN_EXPERIMENTAL=1
+    artifacts: manifests
+    output: true
+    args:
+      - sign
+      - '--yes'
+      - '${artifact}@${digest}'
+
+# Container images. Single variant (the image bundles infiniband-diags +
+# ibswinfo.sh — there is no "minimal" flavour). Pushed as a multi-arch
+# manifest (linux/amd64 + linux/arm64) to GHCR and Docker Hub on every tag.
+#
+# infiniband-diags is only packaged for amd64 and arm64 on Debian, so the
+# images cover those two arches; the tarball still covers all four including
+# ppc64le and s390x.
+#
+# Floating tags (latest, X.Y, X) are skipped on pre-release tags (vX.Y.Z-rc1)
+# so they always point at a stable release.
+dockers_v2:
+  - id: standard
+    dockerfile: Dockerfile
+    images:
+      - "ghcr.io/sckyzo/infiniband_exporter"
+      - "docker.io/sckyzo/infiniband-exporter"
+    tags:
+      - "{{ .Version }}"
+      - '{{ if eq .Prerelease "" }}{{ .Major }}.{{ .Minor }}{{ end }}'
+      - '{{ if eq .Prerelease "" }}{{ .Major }}{{ end }}'
+      - '{{ if eq .Prerelease "" }}latest{{ end }}'
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: "true"
+    labels:
+      "org.opencontainers.image.title": "infiniband_exporter"
+      "org.opencontainers.image.description": "Prometheus exporter for InfiniBand fabrics"
+      "org.opencontainers.image.licenses": "Apache-2.0"
+      "org.opencontainers.image.source": "https://github.com/SckyzO/infiniband_exporter"
+      "org.opencontainers.image.documentation": "https://github.com/SckyzO/infiniband_exporter/blob/main/docker/README.md"
+      "org.opencontainers.image.created": "{{ .Date }}"
+      "org.opencontainers.image.revision": "{{ .FullCommit }}"
+      "org.opencontainers.image.version": "{{ .Version }}"
+    build_args:
+      VERSION: "{{ .Version }}"
+      COMMIT: "{{ .FullCommit }}"
+      BUILD_DATE: "{{ .Date }}"
 
 changelog:
   sort: asc
