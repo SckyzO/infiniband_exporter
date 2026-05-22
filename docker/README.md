@@ -2,6 +2,14 @@ Prometheus exporter for [InfiniBand](https://en.wikipedia.org/wiki/InfiniBand)
 fabrics, shipped as a self-contained container image with `infiniband-diags`
 and the `ibswinfo` helper bundled in.
 
+> **Source code, full documentation & issues:**
+> **[github.com/SckyzO/infiniband_exporter](https://github.com/SckyzO/infiniband_exporter)**
+
+**Images** (multi-arch — linux/amd64 + linux/arm64):
+
+- 🐳 Docker Hub — `docker.io/sckyzo/infiniband-exporter`
+- 📦 GHCR (mirror) — `ghcr.io/sckyzo/infiniband_exporter`
+
 [![Release](https://img.shields.io/github/v/release/SckyzO/infiniband_exporter?label=release)](https://github.com/SckyzO/infiniband_exporter/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/SckyzO/infiniband_exporter/release.yml?label=build)](https://github.com/SckyzO/infiniband_exporter/actions/workflows/release.yml)
 [![Pulls](https://img.shields.io/docker/pulls/sckyzo/infiniband-exporter)](https://hub.docker.com/r/sckyzo/infiniband-exporter)
