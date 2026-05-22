@@ -1,5 +1,10 @@
 # InfiniBand Prometheus exporter
 
+[![Release](https://img.shields.io/github/v/release/SckyzO/infiniband_exporter?label=release)](https://github.com/SckyzO/infiniband_exporter/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/SckyzO/infiniband_exporter/test.yml?label=build)](https://github.com/SckyzO/infiniband_exporter/actions/workflows/test.yml)
+[![Docker Hub](https://img.shields.io/docker/pulls/sckyzo/infiniband-exporter?label=docker%20pulls)](https://hub.docker.com/r/sckyzo/infiniband-exporter)
+[![License](https://img.shields.io/github/license/SckyzO/infiniband_exporter)](LICENSE)
+
 Collects per-port counters from InfiniBand switches and HCAs through the
 standard `infiniband-diags` tools (`ibnetdiscover`, `perfquery`) and the
 optional `ibswinfo` helper for unmanaged switches. Exposes them on a
@@ -58,16 +63,22 @@ To deploy:
 
 ### Container
 
-Multi-arch images on GitHub Container Registry:
-`ghcr.io/sckyzo/infiniband_exporter`.
+Multi-arch images (linux/amd64 + linux/arm64), published to two registries:
+
+* **Docker Hub:** [`docker.io/sckyzo/infiniband-exporter`](https://hub.docker.com/r/sckyzo/infiniband-exporter)
+* **GHCR (mirror):** [`ghcr.io/sckyzo/infiniband_exporter`](https://github.com/users/SckyzO/packages/container/package/infiniband_exporter)
 
 ```bash
 docker run --rm \
     --device /dev/infiniband \
     -p 9315:9315 \
-    ghcr.io/sckyzo/infiniband_exporter:latest \
+    sckyzo/infiniband-exporter:latest \
     --collector.ibswinfo
 ```
+
+Image tags, supply-chain provenance (cosign signatures, CycloneDX SBOMs)
+and the weekly base-image refresh are documented in
+[`docker/README.md`](docker/README.md).
 
 (Switch / HCA / port-state are on by default since 2.0. `ibswinfo`
 is the only collector you still have to opt in.)
