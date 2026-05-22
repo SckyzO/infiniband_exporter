@@ -149,6 +149,16 @@ jobs:
                 --tag "${HUB_REPO}:${version}-${arch}" \
                 --provenance=false \
                 --push .
+
+              # Smoke-test the freshly pushed image on its target platform.
+              # `--version` exits 0 via kingpin (infiniband_exporter.go) before
+              # any fabric access, so it isolates the exec-format failure mode:
+              # a wrong-arch binary fails here (red cron) instead of silently
+              # shipping and only erroring in a user's arm64 deployment. QEMU
+              # (set up above) runs the arm64 image emulated. `set -eu` makes a
+              # non-zero exit fail the job.
+              docker run --rm --platform "linux/${arch}" \
+                "${GHCR_REPO}:${version}-${arch}" --version
             done
 
             # Assemble the multi-arch manifest for the moving and dated tags
