@@ -372,7 +372,7 @@ func ibnetdiscover(ctx context.Context) (string, error) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err := cmd.Run()
+	err := runWithProcessGroup(ctx, cmd)
 	if ctx.Err() == context.DeadlineExceeded {
 		return "", ctx.Err()
 	} else if err != nil {

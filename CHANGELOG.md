@@ -1,3 +1,21 @@
+## Unreleased
+
+### Bug fixes
+
+* **Process-group kill on context timeout.** `ibnetdiscover`,
+  `perfquery`, and `ibswinfo` (a shell script that spawns `flint`,
+  `mst`, `mlxlink`…) are now launched in their own process group, and
+  on context-deadline we SIGKILL the whole group instead of just the
+  immediate child. Previously, when `ibswinfo.sh` timed out, the bash
+  wrapper was killed but its descendants got re-parented to PID 1 and
+  kept hammering the fabric — eventually accumulating into a runaway
+  load on the SMA. Same fix pattern as
+  [`treydock/gpfs_exporter#79`](https://github.com/treydock/gpfs_exporter/pull/79),
+  same upstream report as
+  [`treydock/infiniband_exporter#38`](https://github.com/treydock/infiniband_exporter/issues/38).
+  Internal helper `runWithProcessGroup` factors the pattern; all three
+  call sites use it.
+
 ## 2.0.1 / 2026-05-05
 
 Patch release — no breaking changes. Bundles the doc/dashboard
