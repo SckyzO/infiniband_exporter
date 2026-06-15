@@ -76,6 +76,14 @@ groups:
         # page on a port that was never cabled.
         expr: infiniband_switch_port_state == 0 and on(guid, port) infiniband:switch_port_ever_connected
         for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Switch {{ $labels.switch }} port {{ $labels.port }} is DOWN"
+          description: |
+            Switch port previously seen up has been down for 5 minutes.
+            This is a real link loss on a previously-cabled port —
+            investigate the cable, the SFP, or the peer.
 
       - alert: IBPortStateMetricMissing
         # Catches the silent-failure case where these rules are
@@ -119,14 +127,6 @@ groups:
             recovery counters, and node_exporter on the exporter
             host. If you have not yet, set `--perfquery.retries=1`
             on the exporter to absorb the transients.
-        labels:
-          severity: critical
-        annotations:
-          summary: "Switch {{ $labels.switch }} port {{ $labels.port }} is DOWN"
-          description: |
-            Switch port previously seen up has been down for 5 minutes.
-            This is a real link loss on a previously-cabled port —
-            investigate the cable, the SFP, or the peer.
 
   - name: infiniband.errors
     rules:
