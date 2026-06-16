@@ -93,10 +93,11 @@ Always-1 gauges carrying identifying labels.
 
 | Metric | Notes |
 | --- | --- |
+| `infiniband_exporter_build_info{version, revision, branch, build_user, build_date}` | Always-1 gauge. Stamped at build time via `-ldflags -X`. Use this in dashboards rather than `go_build_info`; the latter's `version` label is the Go-module pseudo-version, which rarely matches the git tag. |
 | `infiniband_exporter_collector_duration_seconds{collector}` | Collector-level latency |
 | `infiniband_exporter_collect_errors_total{collector}` | Cumulative collection errors since startup (Counter; use `rate()` / `increase()`) |
 | `infiniband_exporter_collect_timeouts_total{collector}` | Cumulative collection timeouts since startup (Counter; use `rate()` / `increase()`) |
 | `infiniband_exporter_collect_retries_total{collector}` | Cumulative perfquery retries since startup (only non-zero with `--perfquery.retries>0`) |
 | `infiniband_exporter_last_execution{collector}` | Unix timestamp of last successful runonce execution |
 | `go_*`, `process_*`, `promhttp_*` | Stdlib/runtime self-metrics |
-| `go_build_info` | Always present, exposes the running version + revision |
+| `go_build_info` | Go-module level build info. Kept for completeness; prefer `infiniband_exporter_build_info` for version display. |
