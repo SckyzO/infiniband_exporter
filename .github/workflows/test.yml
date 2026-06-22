@@ -20,7 +20,7 @@ jobs:
     container:
       image: golang:1.26.2
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Mark workspace as a safe git directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -57,7 +57,7 @@ jobs:
     container:
       image: golangci/golangci-lint:latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Mark workspace as a safe git directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: golangci-lint
