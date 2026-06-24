@@ -65,5 +65,6 @@ Conventional commit prefixes (`feat:`, `fix:`, `perf:`,
 `refactor:`) are recognized by the changelog grouping; everything
 else lands in *Other*.
 
-Bump strategy across the lots leading to v1.0.0 has been one minor
-version per "lot" of work — see `CHANGELOG.md` for the trail.
+Post-2.0, semver is followed strictly: breaking changes bump the major,
+new flags and metrics bump the minor, bug fixes bump the patch. See
+`CHANGELOG.md` for the trail.

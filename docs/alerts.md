@@ -59,6 +59,7 @@ never fire.
 | `IBHCAScrapeFailing` | warning | `infiniband_hca_up == 0` for 5 m |
 | `IBSwitchPortDown` | critical | `infiniband_switch_port_state == 0 and on() infiniband:switch_port_ever_connected` for 5 m |
 | `IBPortStateMetricMissing` | warning | `absent_over_time(infiniband_switch_port_state[30m])` for 30 m |
+| `IBHCAScrapeErrorRateElevated` | info | `increase(infiniband_exporter_collect_errors_total{collector="hca"}[1h]) > 5` for 30 m |
 
 The `IBSwitchPortDown` alert pairs `port_state == 0` with the
 `infiniband:switch_port_ever_connected` recording rule
@@ -69,10 +70,8 @@ exporter (default enabled since 2.0).
 `IBPortStateMetricMissing` (added in 1.1) is the safety net for that
 last requirement: it fires when the `port_state` series has not been
 seen anywhere in the fabric for 30 minutes, which is what happens if
-operators deploy these rules but forget the flag — without this
+operators deploy these rules but forget the flag. Without this
 catch, `IBSwitchPortDown` is silently inoperative.
-
-| `IBHCAScrapeErrorRateElevated` | info | `increase(infiniband_exporter_collect_errors_total{collector="hca"}[1h]) > 5` for 30 m |
 
 `IBHCAScrapeErrorRateElevated` (added with the v2.0 alert pack) is
 an info-level signal that more than 1 % of HCA scrapes over the
