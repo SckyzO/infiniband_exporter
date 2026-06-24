@@ -84,11 +84,7 @@ infiniband_exporter \
 This is supported and will not be deprecated — flipping the default
 just made the common case implicit.
 
-## 3. Removed: `_runonce` collector label suffix
-
-Wait — actually, this hasn't changed. Sorry.
-
-## 4. Other notes that are not breaking but worth knowing
+## 3. Other notes that are not breaking but worth knowing
 
 * `--perfquery.max-concurrent` default went from `1` to `4` in 1.1.
   If you set it explicitly, no change.

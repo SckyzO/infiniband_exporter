@@ -1,7 +1,9 @@
 # Grafana dashboards
 
-The exporter ships with six dashboards in
-[`examples/grafana/`](../examples/grafana/). All of them target
+The exporter ships with nine dashboards in
+[`examples/grafana/`](../examples/grafana/) — seven operational views
+plus two fabric-overview variants (small and large fabrics). All of
+them target
 **Grafana 10+** and use the `${DS_PROMETHEUS}` placeholder so they
 import cleanly through the standard *Dashboards → Import → Upload JSON*
 flow.
