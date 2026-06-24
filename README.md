@@ -114,11 +114,11 @@ Enabled or disabled with `--collector.<name>` / `--no-collector.<name>`.
 | Collector | Default | Purpose |
 | --- | --- | --- |
 | `switch` | enabled | Per-port `perfquery` counters for fabric switches |
-| `hca` | disabled | Same counters, viewed from each HCA port the host can reach |
+| `hca` | enabled | Same counters, viewed from each HCA port the host can reach |
 | `ibswinfo` | disabled | Hardware info, PSU/fan status, temperature for switches via the [ibswinfo](https://github.com/stanford-rc/ibswinfo) helper |
 | `switch.base-metrics` | enabled | Toggles the headline `switch_*` series. Disable with `--no-collector.switch.base-metrics` to run rcv-error-details only |
 | `switch.rcv-err-details` | disabled | Adds the slower `-E` perfquery counters (one query per port) |
-| `switch.port-state` | disabled | Adds `infiniband_switch_port_state{port}` gauge (1 = up, 0 = down). See [docs/alerts.md](docs/alerts.md) for the alerting recipe. |
+| `switch.port-state` | enabled | Adds `infiniband_switch_port_state{port}` gauge (1 = up, 0 = down). See [docs/alerts.md](docs/alerts.md) for the alerting recipe. |
 | `hca.base-metrics` | enabled | Mirror of `switch.base-metrics` for the HCA collector |
 | `hca.rcv-err-details` | disabled | Mirror of `switch.rcv-err-details` for HCA |
 
@@ -132,11 +132,11 @@ Selected flags. Run `infiniband_exporter --help` for the full list.
 | `--sudo` | `false` | Wrap every `ibnetdiscover` / `perfquery` / `ibswinfo` invocation in `sudo`. Sample sudoers below. |
 | `--ibnetdiscover.path` | `ibnetdiscover` | Override if not on `$PATH` |
 | `--ibnetdiscover.timeout` | `20s` | |
-| `--ibnetdiscover.cache-ttl` | `0s` | When >0, reuses the parsed topology between scrapes |
-| `--perfquery.max-concurrent` | `1` | Critical for large fabrics. Bump to ~8 on multi-core hosts. |
+| `--ibnetdiscover.cache-ttl` | `5m` | Reuses the parsed topology between scrapes. Set to `0` to re-run `ibnetdiscover` every scrape. |
+| `--perfquery.max-concurrent` | `4` | Critical for large fabrics. Bump to ~8 on multi-core hosts. |
 | `--perfquery.timeout` | `5s` | |
-| `--ibswinfo.max-concurrent` | `4` | Increased from 1 in v0.15.0 — see [docs/operations.md](docs/operations.md#sizing-perfquery-and-ibswinfo) |
-| `--ibswinfo.static-cache-ttl` | `15m` | Caches PartNumber / SerialNumber / firmware so most scrapes use the lighter `ibswinfo -o vitals` mode. Set to `0` to disable. |
+| `--ibswinfo.max-concurrent` | `4` | See [docs/operations.md](docs/operations.md#sizing-perfquery-and-ibswinfo) for tuning notes. |
+| `--ibswinfo.static-cache-ttl` | `5m` | Caches PartNumber / SerialNumber / firmware so most scrapes use the lighter `ibswinfo -o vitals` mode. Set to `0` to disable. |
 | `--exporter.runonce` | `false` | Single shot, write metrics to `--exporter.output` and exit. Pairs with node_exporter's textfile collector for fabrics where scrape time exceeds Prometheus's scrape timeout. |
 
 ### Permissions

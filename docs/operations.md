@@ -8,28 +8,28 @@ dashboards see [alerts.md](alerts.md) and [dashboards.md](dashboards.md).
 
 The two flags that matter most on a non-trivial fabric:
 
-* `--perfquery.max-concurrent` (default `1`). On a multi-core management
-  host, **bump this to 8**. Leaving it at 1 makes the switch and HCA
-  collectors run sequentially, which is fine on a 3-switch lab and
-  catastrophic on a 100-switch fabric.
-* `--ibswinfo.max-concurrent` (default `4`, raised from `1` in v0.15.0).
-  ibswinfo takes ≈1.4 s per switch on HDR fabrics. With 4 in flight a
-  20-switch fabric drops from ~32 s to ~8 s. Bump higher if your fabric
-  is bigger and the SMA can take it.
+* `--perfquery.max-concurrent` (default `4`). Fine on a small fabric or
+  a low-core management host. On a multi-core host driving a large
+  fabric, **bump this to 8 or more**. The switch and HCA collectors fan
+  out within this concurrency budget.
+* `--ibswinfo.max-concurrent` (default `4`). ibswinfo takes ≈1.4 s per
+  switch on HDR fabrics. With 4 in flight a 20-switch fabric drops from
+  ~32 s to ~8 s. Bump higher if your fabric is bigger and the SMA can
+  take it.
 
 Pair concurrency with the cache flag:
 
-* `--ibswinfo.static-cache-ttl` (default `15m`). Keeps PartNumber /
+* `--ibswinfo.static-cache-ttl` (default `5m`). Keeps PartNumber /
   SerialNumber / PSID / FirmwareVersion in memory; while fresh, the
   exporter switches to `ibswinfo -d lid-X -o vitals` which only reads
-  the dynamic registers. Set to `0` to reproduce pre-v0.15.0 behaviour.
-  PSU / fan **status** strings are not cached — see the caveat in
-  CHANGELOG v0.15.0.
+  the dynamic registers. Set to `0` to run full `ibswinfo` on every
+  scrape. PSU / fan status strings are re-emitted from the cache on
+  warm scrapes; the underlying source data refreshes on the cold pass.
 
-* `--ibnetdiscover.cache-ttl` (default `0`, disabled). On fabrics where
-  `ibnetdiscover` itself takes seconds, set to ~5 minutes so the parsed
-  topology is reused between scrapes. perfquery counters are still
-  re-collected every scrape.
+* `--ibnetdiscover.cache-ttl` (default `5m`). Reuses the parsed topology
+  between scrapes, which matters on fabrics where `ibnetdiscover` itself
+  takes seconds. Set to `0` to re-run it every scrape. perfquery
+  counters are collected on every scrape regardless of this setting.
 
 ## Permissions
 
