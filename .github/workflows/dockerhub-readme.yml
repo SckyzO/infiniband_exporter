@@ -32,7 +32,7 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Update Docker Hub description
         uses: peter-evans/dockerhub-description@v5
         with:
