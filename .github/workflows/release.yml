@@ -16,7 +16,7 @@ jobs:
       packages: write # needed to push to GHCR
       id-token: write # needed for keyless cosign signing
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
