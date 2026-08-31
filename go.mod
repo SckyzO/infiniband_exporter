@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/gofrs/flock v0.13.0
+	github.com/gofrs/flock v0.13.1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/common v0.70.1
 	github.com/prometheus/exporter-toolkit v0.19.0
